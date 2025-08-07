@@ -326,7 +326,7 @@ router.post('/:connectionId/indexes/:database/:collection', async (req: Request,
 router.put('/:connectionId/document/:database/:collection/:documentId', async (req: Request, res: Response) => {
   try {
     const { connectionId, database, collection, documentId } = req.params;
-    const updateData = req.body;
+    const { document: updateData } = req.body;
     
     if (!updateData) {
       return res.status(400).json({
@@ -382,7 +382,7 @@ router.put('/:connectionId/document/:database/:collection/:documentId', async (r
 router.post('/:connectionId/document/:database/:collection', async (req: Request, res: Response) => {
   try {
     const { connectionId, database, collection } = req.params;
-    const documentData = req.body;
+    const { document: documentData } = req.body;
     
     if (!documentData) {
       return res.status(400).json({

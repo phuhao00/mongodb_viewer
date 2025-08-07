@@ -94,7 +94,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-4xl max-h-[90vh] m-4 flex flex-col">
+      <Card className="w-full max-w-6xl max-h-[95vh] m-4 flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({
               value={editedDoc}
               onChange={(e) => handleDocumentChange(e.target.value)}
               className={cn(
-                'flex-1 w-full p-4 border rounded-lg font-mono text-sm resize-none',
+                'flex-1 w-full p-4 border rounded-lg font-mono text-sm resize-none min-h-[500px]',
                 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white',
                 'border-gray-300 dark:border-gray-600',
                 'focus:ring-2 focus:ring-blue-500 focus:border-transparent',
