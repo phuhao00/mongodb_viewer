@@ -139,6 +139,35 @@ export const queryAPI = {
         body: JSON.stringify(data),
       }
     ),
+
+  // 创建文档
+  createDocument: (connectionId: string, database: string, collection: string, document: any) =>
+    request<{ success: boolean; data: { insertedId: string } }>(
+      `/query/${connectionId}/document/${database}/${collection}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ document }),
+      }
+    ),
+
+  // 更新文档
+  updateDocument: (connectionId: string, database: string, collection: string, documentId: string, document: any) =>
+    request<{ success: boolean; data: { modifiedCount: number } }>(
+      `/query/${connectionId}/document/${database}/${collection}/${documentId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ document }),
+      }
+    ),
+
+  // 删除文档
+  deleteDocument: (connectionId: string, database: string, collection: string, documentId: string) =>
+    request<{ success: boolean; data: { deletedCount: number } }>(
+      `/query/${connectionId}/document/${database}/${collection}/${documentId}`,
+      {
+        method: 'DELETE',
+      }
+    ),
 };
 
 // 可视化API

@@ -322,4 +322,147 @@ router.post('/:connectionId/indexes/:database/:collection', async (req: Request,
   }
 });
 
+// 更新文档
+router.put('/:connectionId/document/:database/:collection/:documentId', async (req: Request, res: Response) => {
+  try {
+    const { connectionId, database, collection, documentId } = req.params;
+    const updateData = req.body;
+    
+    if (!updateData) {
+      return res.status(400).json({
+        success: false,
+        message: '更新数据是必需的'
+      });
+    }
+
+    const client = dbManager.getConnection(connectionId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: '连接不存在'
+      });
+    }
+
+    const db = client.db(database);
+    const coll = db.collection(collection);
+    
+    // 移除_id字段以避免更新冲突
+    const { _id, ...dataToUpdate } = updateData;
+    
+    const result = await coll.updateOne(
+      { _id: new (await import('mongodb')).ObjectId(documentId) },
+      { $set: dataToUpdate }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '文档不存在'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        modifiedCount: result.modifiedCount,
+        matchedCount: result.matchedCount
+      }
+    });
+  } catch (error) {
+    console.error('更新文档失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新文档失败',
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+  }
+});
+
+// 创建文档
+router.post('/:connectionId/document/:database/:collection', async (req: Request, res: Response) => {
+  try {
+    const { connectionId, database, collection } = req.params;
+    const documentData = req.body;
+    
+    if (!documentData) {
+      return res.status(400).json({
+        success: false,
+        message: '文档数据是必需的'
+      });
+    }
+
+    const client = dbManager.getConnection(connectionId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: '连接不存在'
+      });
+    }
+
+    const db = client.db(database);
+    const coll = db.collection(collection);
+    
+    const result = await coll.insertOne(documentData);
+    
+    res.json({
+      success: true,
+      data: {
+        insertedId: result.insertedId,
+        acknowledged: result.acknowledged
+      }
+    });
+  } catch (error) {
+    console.error('创建文档失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '创建文档失败',
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+  }
+});
+
+// 删除文档
+router.delete('/:connectionId/document/:database/:collection/:documentId', async (req: Request, res: Response) => {
+  try {
+    const { connectionId, database, collection, documentId } = req.params;
+
+    const client = dbManager.getConnection(connectionId);
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: '连接不存在'
+      });
+    }
+
+    const db = client.db(database);
+    const coll = db.collection(collection);
+    
+    const result = await coll.deleteOne(
+      { _id: new (await import('mongodb')).ObjectId(documentId) }
+    );
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '文档不存在'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        deletedCount: result.deletedCount,
+        acknowledged: result.acknowledged
+      }
+    });
+  } catch (error) {
+    console.error('删除文档失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '删除文档失败',
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+  }
+});
+
 export default router;

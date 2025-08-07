@@ -8,7 +8,11 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Filter
+  Filter,
+  Edit,
+  Code,
+  TreePine,
+  Trash2
 } from 'lucide-react';
 import { useConnections, useDatabase, useUI } from '../store/useStore';
 import { api } from '../services/api';
@@ -17,6 +21,9 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { toast } from '../components/ui/Toast';
 import { cn, formatNumber } from '../lib/utils';
+import DocumentEditor from '../components/DocumentEditor';
+import TreeView from '../components/TreeView';
+import GolangCodeGenerator from '../components/GolangCodeGenerator';
 
 interface DatabaseInfo {
   name: string;
@@ -52,6 +59,10 @@ const DatabaseBrowser: React.FC = () => {
   const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [collectionData, setCollectionData] = useState<any[]>([]);
   const [collectionStats, setCollectionStats] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'tree'>('table');
+  const [editingDocument, setEditingDocument] = useState<any>(null);
+  const [showCodeGenerator, setShowCodeGenerator] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
 
   const currentConn = connections.find(c => c.id === currentConnectionId);
 
@@ -140,6 +151,63 @@ const DatabaseBrowser: React.FC = () => {
       toast.error(error.message || '加载集合数据失败');
     } finally {
       setLoading('collectionData', false);
+    }
+  };
+
+  const handleDocumentEdit = (document: any) => {
+    setEditingDocument(document);
+  };
+
+  const handleDocumentSave = async (document: any) => {
+    if (!currentConnectionId || !currentDatabase || !selectedCollection) return;
+    
+    try {
+      if (document._id) {
+        // 更新现有文档
+        await api.query.updateDocument(currentConnectionId, currentDatabase, selectedCollection, document._id, document);
+        toast.success('文档更新成功');
+      } else {
+        // 创建新文档
+        await api.query.createDocument(currentConnectionId, currentDatabase, selectedCollection, document);
+        toast.success('文档创建成功');
+      }
+      
+      // 重新加载数据
+      loadCollectionData(currentDatabase, selectedCollection);
+      setEditingDocument(null);
+    } catch (error: any) {
+      console.error('Error saving document:', error);
+      toast.error('保存文档失败');
+    }
+  };
+
+  const handleDocumentDelete = async (documentId: string) => {
+    if (!currentConnectionId || !currentDatabase || !selectedCollection) return;
+    
+    if (!confirm('确定要删除这个文档吗？')) return;
+    
+    try {
+      await api.query.deleteDocument(currentConnectionId, currentDatabase, selectedCollection, documentId);
+      toast.success('文档删除成功');
+      
+      // 重新加载数据
+      loadCollectionData(currentDatabase, selectedCollection);
+    } catch (error: any) {
+      console.error('Error deleting document:', error);
+      toast.error('删除文档失败');
+    }
+  };
+
+  const handleTreeEdit = (path: string[], value: any) => {
+    if (selectedDocument) {
+      const updatedDocument = { ...selectedDocument };
+      // 简单的路径设置，实际应用中可能需要更复杂的逻辑
+      let current = updatedDocument;
+      for (let i = 0; i < path.length - 1; i++) {
+        current = current[path[i]];
+      }
+      current[path[path.length - 1]] = value;
+      setSelectedDocument(updatedDocument);
     }
   };
 
@@ -293,18 +361,61 @@ const DatabaseBrowser: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={() => loadCollectionData(currentDatabase!, selectedCollection)}
-                  disabled={loading.collectionData}
-                >
-                  {loading.collectionData ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                  )}
-                  刷新
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* 视图切换按钮 */}
+                  <div className="flex border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                      className="rounded-r-none"
+                    >
+                      <FileText className="w-4 h-4 mr-1" />
+                      表格
+                    </Button>
+                    <Button
+                      variant={viewMode === 'tree' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('tree')}
+                      className="rounded-l-none"
+                    >
+                      <TreePine className="w-4 h-4 mr-1" />
+                      树形
+                    </Button>
+                  </div>
+                  
+                  {/* 功能按钮 */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingDocument({})}
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    新建
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCodeGenerator(true)}
+                  >
+                    <Code className="w-4 h-4 mr-1" />
+                    生成代码
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => loadCollectionData(currentDatabase!, selectedCollection)}
+                    disabled={loading.collectionData}
+                  >
+                    {loading.collectionData ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    刷新
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -328,9 +439,42 @@ const DatabaseBrowser: React.FC = () => {
                 <div className="space-y-4">
                   {collectionData.map((doc, index) => (
                     <Card key={index} className="p-4">
-                      <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap overflow-auto">
-                        {JSON.stringify(doc, null, 2)}
-                      </pre>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          {viewMode === 'tree' ? (
+                            <TreeView 
+                              data={doc} 
+                              onEdit={handleTreeEdit}
+                            />
+                          ) : (
+                            <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap overflow-auto">
+                              {JSON.stringify(doc, null, 2)}
+                            </pre>
+                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedDocument(doc);
+                              setEditingDocument(doc);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {doc._id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDocumentDelete(doc._id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -351,6 +495,24 @@ const DatabaseBrowser: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* 文档编辑器模态框 */}
+      {editingDocument && (
+        <DocumentEditor
+          document={editingDocument}
+          onSave={handleDocumentSave}
+          onCancel={() => setEditingDocument(null)}
+        />
+      )}
+
+      {/* 代码生成器模态框 */}
+      {showCodeGenerator && currentDatabase && selectedCollection && (
+        <GolangCodeGenerator
+          database={currentDatabase}
+          collection={selectedCollection}
+          onClose={() => setShowCodeGenerator(false)}
+        />
+      )}
     </div>
   );
 };
