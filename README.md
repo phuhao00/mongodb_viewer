@@ -75,28 +75,347 @@
   <p><em>从数据库连接到代码生成的完整工作流程</em></p>
 </div>
 
+## 🏗️ 系统架构
+
+### 整体架构设计
+
+<div align="center">
+  <img src="docs/images/architecture.svg" alt="System Architecture" width="800"/>
+  <p><em>三层架构：前端展示层、后端服务层、数据存储层</em></p>
+</div>
+
+我们的 MongoDB 可视化工具采用现代化的三层架构设计：
+
+#### 🎨 前端展示层 (Presentation Layer)
+- **用户界面**: React 18 + TypeScript 构建的现代化 SPA
+- **状态管理**: Zustand 轻量级状态管理
+- **路由系统**: React Router 单页面应用路由
+- **样式系统**: Tailwind CSS 实用优先的样式框架
+- **构建工具**: Vite 快速开发和构建
+
+#### ⚙️ 后端服务层 (Service Layer)
+- **API 服务**: Node.js + Express.js RESTful API
+- **数据库驱动**: MongoDB Native Driver
+- **实时通信**: WebSocket 支持实时数据更新
+- **缓存层**: Redis 查询结果缓存
+- **类型安全**: TypeScript 端到端类型安全
+
+#### 💾 数据存储层 (Data Layer)
+- **主数据库**: MongoDB 文档数据库
+- **缓存数据库**: Redis 内存数据库
+- **数据持久化**: Docker 卷持久化存储
+
+### 技术架构图
+
+```mermaid
+graph TD
+    A[用户浏览器] --> B[React 18 前端应用]
+    B --> C[Node.js Express 后端]
+    C --> D[MongoDB 数据库]
+    C --> E[Redis 缓存]
+    C --> F[WebSocket 连接]
+    
+    subgraph "前端层"
+        B
+        G[Vite 构建工具]
+        H[TypeScript]
+        I[Tailwind CSS]
+        J[Zustand 状态管理]
+    end
+    
+    subgraph "后端层"
+        C
+        F
+        E
+    end
+    
+    subgraph "数据层"
+        D
+    end
+```
+
+### 数据流架构
+
+```mermaid
+sequenceDiagram
+    participant U as 用户界面
+    participant F as 前端应用
+    participant B as 后端API
+    participant M as MongoDB
+    participant R as Redis缓存
+    
+    U->>F: 用户操作
+    F->>B: API 请求
+    B->>R: 检查缓存
+    alt 缓存命中
+        R-->>B: 返回缓存数据
+    else 缓存未命中
+        B->>M: 查询数据库
+        M-->>B: 返回数据
+        B->>R: 更新缓存
+    end
+    B-->>F: 返回响应
+    F-->>U: 更新界面
+```
+
+### 组件架构
+
+```mermaid
+graph TB
+    subgraph "前端组件架构"
+        A[App.tsx] --> B[Layout.tsx]
+        B --> C[Connections.tsx]
+        B --> D[DatabaseBrowser.tsx]
+        B --> E[QueryEditor.tsx]
+        B --> F[DataVisualization.tsx]
+        B --> G[Settings.tsx]
+        
+        C --> H[ConnectionForm]
+        D --> I[TreeView]
+        D --> J[DocumentEditor]
+        E --> K[MonacoEditor]
+        F --> L[Charts]
+    end
+    
+    subgraph "后端路由架构"
+        M[app.ts] --> N[/api/connections]
+        M --> O[/api/query]
+        M --> P[/api/visualize]
+        M --> Q[/api/auth]
+    end
+```
+
 ## 🛠️ 技术栈
 
-### 前端
-- **React 18** - 用户界面框架
-- **TypeScript** - 类型安全的 JavaScript
-- **Vite** - 快速构建工具
-- **Tailwind CSS** - 实用优先的 CSS 框架
-- **Zustand** - 轻量级状态管理
-- **React Router** - 路由管理
-- **Lucide React** - 图标库
-- **Recharts** - 图表库
+### 前端技术栈
+- **React 18** - 用户界面框架，支持并发特性
+- **TypeScript 5** - 类型安全的 JavaScript 超集
+- **Vite 5** - 快速构建工具和开发服务器
+- **Tailwind CSS 3** - 实用优先的 CSS 框架
+- **Zustand 4** - 轻量级状态管理库
+- **React Router 6** - 声明式路由管理
+- **Lucide React** - 现代化图标库
+- **Recharts 2** - React 图表库
+- **Monaco Editor** - VS Code 同款代码编辑器
 
-### 后端
-- **Node.js** - 运行时环境
-- **Express.js** - Web 框架
-- **MongoDB Driver** - 数据库连接
-- **TypeScript** - 类型安全
+### 后端技术栈
+- **Node.js 20** - JavaScript 运行时环境
+- **Express.js 4** - 快速、极简的 Web 框架
+- **MongoDB Driver** - 官方 MongoDB 数据库驱动
+- **Socket.io 4** - 实时双向通信库
+- **TypeScript 5** - 后端类型安全
+- **Nodemon** - 开发时自动重启工具
 
-### 开发工具
+### 数据库技术栈
+- **MongoDB 7** - 文档型 NoSQL 数据库
+- **Redis 7** - 内存数据库，用于缓存
+- **Docker** - 容器化部署
+- **Docker Compose** - 多容器编排
+
+### 开发工具链
 - **ESLint** - 代码质量检查
 - **Prettier** - 代码格式化
-- **Nodemon** - 开发时自动重启
+- **Git** - 版本控制
+- **GitHub Actions** - CI/CD 自动化
+- **Vercel** - 前端部署平台
+
+## 🔌 API 架构
+
+### RESTful API 设计
+
+我们的后端 API 遵循 RESTful 设计原则，提供清晰、一致的接口：
+
+#### 核心 API 端点
+
+| 端点 | 方法 | 描述 | 认证 |
+|------|------|------|------|
+| `/api/connections` | GET | 获取连接列表 | ✅ |
+| `/api/connections` | POST | 创建新连接 | ✅ |
+| `/api/connections/:id` | PUT | 更新连接配置 | ✅ |
+| `/api/connections/:id` | DELETE | 删除连接 | ✅ |
+| `/api/connections/:id/test` | POST | 测试连接 | ✅ |
+| `/api/query/:connectionId` | POST | 执行数据库查询 | ✅ |
+| `/api/visualize/:connectionId` | POST | 生成数据可视化 | ✅ |
+| `/api/databases/:connectionId` | GET | 获取数据库列表 | ✅ |
+| `/api/collections/:connectionId/:database` | GET | 获取集合列表 | ✅ |
+
+#### API 响应格式
+
+所有 API 响应都遵循统一的格式：
+
+```json
+{
+  "success": true,
+  "data": {
+    // 响应数据
+  },
+  "message": "操作成功",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "requestId": "req_123456789"
+}
+```
+
+错误响应格式：
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "请求参数验证失败",
+    "details": [
+      {
+        "field": "uri",
+        "message": "MongoDB URI 格式不正确"
+      }
+    ]
+  },
+  "timestamp": "2024-01-15T10:30:00Z",
+  "requestId": "req_123456789"
+}
+```
+
+### WebSocket 实时通信
+
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant S as WebSocket服务器
+    participant M as MongoDB
+    
+    C->>S: 连接 WebSocket
+    S-->>C: 连接确认
+    
+    C->>S: 订阅数据变化
+    S->>M: 监听 Change Stream
+    
+    M-->>S: 数据变化事件
+    S-->>C: 推送实时更新
+    
+    C->>S: 取消订阅
+    S->>M: 停止监听
+```
+
+## 📊 数据模型
+
+### 实体关系图
+
+```mermaid
+erDiagram
+    CONNECTION ||--o{ QUERY_HISTORY : has
+    CONNECTION ||--o{ VISUALIZATION : creates
+    USER ||--o{ CONNECTION : owns
+    
+    CONNECTION {
+        string id PK
+        string name
+        string uri
+        object options
+        string userId FK
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    
+    QUERY_HISTORY {
+        string id PK
+        string connectionId FK
+        string database
+        string collection
+        object query
+        object result
+        number executionTime
+        timestamp createdAt
+    }
+    
+    VISUALIZATION {
+        string id PK
+        string connectionId FK
+        string name
+        string chartType
+        object config
+        object data
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    
+    USER {
+        string id PK
+        string email
+        string name
+        string plan
+        timestamp createdAt
+    }
+```
+
+### 数据类型定义
+
+#### Connection 连接配置
+
+```typescript
+interface Connection {
+  id: string;
+  name: string;
+  uri: string;
+  options: {
+    maxPoolSize?: number;
+    serverSelectionTimeoutMS?: number;
+    ssl?: boolean;
+    authSource?: string;
+  };
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+#### Query 查询对象
+
+```typescript
+interface QueryRequest {
+  database: string;
+  collection: string;
+  query: object;
+  options?: {
+    limit?: number;
+    skip?: number;
+    sort?: object;
+    projection?: object;
+  };
+}
+
+interface QueryResult {
+  success: boolean;
+  data: any[];
+  count: number;
+  executionTime: number;
+  metadata: {
+    database: string;
+    collection: string;
+    totalDocuments: number;
+  };
+}
+```
+
+#### Visualization 可视化配置
+
+```typescript
+interface Visualization {
+  id: string;
+  connectionId: string;
+  name: string;
+  chartType: 'bar' | 'line' | 'pie' | 'scatter' | 'area';
+  config: {
+    xField?: string;
+    yField?: string;
+    colorField?: string;
+    aggregation?: object[];
+    filters?: object;
+  };
+  data: any[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ## 🚀 快速开始
 
@@ -358,22 +677,165 @@ NODE_ENV=development
 - 查询限制：可在设置中调整查询结果数量限制
 - 连接超时：可配置数据库连接超时时间
 
-## 📁 项目结构
+## 📁 项目架构与结构
+
+### 目录结构说明
 
 ```
 mongo_view/
-├── src/                    # 前端源码
-│   ├── components/         # React 组件
-│   ├── pages/             # 页面组件
-│   ├── services/          # API 服务
-│   ├── store/             # 状态管理
-│   └── hooks/             # 自定义 Hooks
-├── api/                   # 后端源码
-│   ├── routes/            # API 路由
-│   ├── config/            # 配置文件
-│   └── server.ts          # 服务器入口
-├── public/                # 静态资源
-└── dist/                  # 构建输出
+├── 📁 src/                     # 前端源码目录
+│   ├── 📁 components/          # 可复用 React 组件
+│   │   ├── DocumentEditor.tsx  # 文档编辑器组件
+│   │   ├── TreeView.tsx        # 树形视图组件
+│   │   ├── Layout.tsx          # 布局组件
+│   │   └── ui/                 # 基础 UI 组件库
+│   ├── 📁 pages/              # 页面级组件
+│   │   ├── Connections.tsx     # 连接管理页面
+│   │   ├── DatabaseBrowser.tsx # 数据库浏览页面
+│   │   ├── QueryEditor.tsx     # 查询编辑器页面
+│   │   ├── DataVisualization.tsx # 数据可视化页面
+│   │   └── Settings.tsx        # 设置页面
+│   ├── 📁 services/           # API 服务层
+│   │   └── api.ts             # API 请求封装
+│   ├── 📁 store/              # 状态管理
+│   │   └── useStore.ts        # Zustand 状态管理
+│   ├── 📁 hooks/              # 自定义 React Hooks
+│   │   └── useTheme.ts        # 主题切换 Hook
+│   └── 📁 lib/                # 工具函数库
+│       └── utils.ts           # 通用工具函数
+├── 📁 api/                    # 后端源码目录
+│   ├── 📁 routes/             # API 路由模块
+│   │   ├── connections.ts      # 连接管理路由
+│   │   ├── query.ts           # 查询执行路由
+│   │   ├── visualize.ts       # 数据可视化路由
+│   │   └── auth.ts            # 认证相关路由
+│   ├── 📁 config/             # 配置文件
+│   │   └── database.ts        # 数据库配置
+│   ├── app.ts                 # Express 应用配置
+│   ├── server.ts              # 服务器入口文件
+│   └── index.ts               # 主入口文件
+├── 📁 docker/                 # Docker 相关文件
+│   ├── nginx.conf             # Nginx 配置
+│   └── mongo-init.js          # MongoDB 初始化脚本
+├── 📁 docs/                   # 文档和图片
+│   └── 📁 images/             # 架构图和界面图
+│       ├── architecture.svg    # 系统架构图
+│       ├── features.svg       # 功能特性图
+│       ├── interface-mockup.svg # 界面原型图
+│       └── workflow.svg       # 工作流程图
+├── 📁 scripts/                # 脚本文件
+│   └── init-test-data.js      # 测试数据初始化脚本
+├── 📁 public/                 # 静态资源
+│   └── favicon.svg            # 网站图标
+├── 📁 dist/                   # 构建输出目录
+├── 📄 docker-compose.yml      # Docker 编排配置
+├── 📄 Dockerfile.frontend     # 前端 Docker 镜像
+├── 📄 Dockerfile.backend      # 后端 Docker 镜像
+├── 📄 package.json            # 项目依赖配置
+├── 📄 vite.config.ts          # Vite 构建配置
+├── 📄 tailwind.config.js      # Tailwind CSS 配置
+└── 📄 tsconfig.json           # TypeScript 配置
+```
+
+### 架构分层说明
+
+#### 🎨 前端架构层次
+
+```mermaid
+graph TD
+    A[用户界面层] --> B[页面组件层]
+    B --> C[业务组件层]
+    C --> D[基础组件层]
+    B --> E[状态管理层]
+    E --> F[服务层]
+    F --> G[API 通信层]
+    
+    subgraph "前端分层架构"
+        A
+        B
+        C
+        D
+        E
+        F
+        G
+    end
+```
+
+- **用户界面层**: 用户直接交互的界面元素
+- **页面组件层**: 完整的页面级组件 (pages/)
+- **业务组件层**: 可复用的业务逻辑组件 (components/)
+- **基础组件层**: 通用 UI 组件 (components/ui/)
+- **状态管理层**: 全局状态管理 (store/)
+- **服务层**: 业务逻辑服务 (services/)
+- **API 通信层**: 与后端的数据交互
+
+#### ⚙️ 后端架构层次
+
+```mermaid
+graph TD
+    H[路由层] --> I[控制器层]
+    I --> J[服务层]
+    J --> K[数据访问层]
+    K --> L[数据库层]
+    
+    subgraph "后端分层架构"
+        H
+        I
+        J
+        K
+        L
+    end
+```
+
+- **路由层**: API 路由定义和请求分发 (routes/)
+- **控制器层**: 请求处理和响应封装
+- **服务层**: 核心业务逻辑处理
+- **数据访问层**: 数据库操作抽象
+- **数据库层**: MongoDB 数据存储
+
+### 模块依赖关系
+
+```mermaid
+graph LR
+    subgraph "前端模块"
+        A[Pages] --> B[Components]
+        A --> C[Store]
+        A --> D[Services]
+        B --> E[UI Components]
+        C --> D
+        D --> F[API Client]
+    end
+    
+    subgraph "后端模块"
+        G[Routes] --> H[Controllers]
+        H --> I[Services]
+        I --> J[Database]
+    end
+    
+    F --> G
+```
+
+### 数据流向图
+
+```mermaid
+flowchart TD
+    A[用户操作] --> B[React 组件]
+    B --> C[Zustand Store]
+    C --> D[API Service]
+    D --> E[Express Router]
+    E --> F[Controller]
+    F --> G[Business Service]
+    G --> H[MongoDB Driver]
+    H --> I[(MongoDB)]
+    
+    I --> H
+    H --> G
+    G --> F
+    F --> E
+    E --> D
+    D --> C
+    C --> B
+    B --> J[UI 更新]
 ```
 
 ## 🤝 贡献指南
