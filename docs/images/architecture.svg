@@ -1,0 +1,110 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #2563eb; }
+      .component { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: white; }
+      .label { font-family: Arial, sans-serif; font-size: 12px; fill: #374151; }
+      .arrow { stroke: #6b7280; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .connection { stroke: #10b981; stroke-width: 2; stroke-dasharray: 5,5; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">MongoDB Visualization Tool Architecture</text>
+  
+  <!-- Frontend Layer -->
+  <rect x="50" y="80" width="700" height="120" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="10"/>
+  <text x="70" y="100" class="label">Frontend Layer</text>
+  
+  <!-- React Components -->
+  <rect x="80" y="120" width="120" height="60" fill="#3b82f6" rx="5"/>
+  <text x="140" y="145" text-anchor="middle" class="component">React 18</text>
+  <text x="140" y="165" text-anchor="middle" class="component">TypeScript</text>
+  
+  <!-- UI Components -->
+  <rect x="220" y="120" width="120" height="60" fill="#3b82f6" rx="5"/>
+  <text x="280" y="140" text-anchor="middle" class="component">UI Components</text>
+  <text x="280" y="155" text-anchor="middle" class="component">Tailwind CSS</text>
+  <text x="280" y="170" text-anchor="middle" class="component">Lucide Icons</text>
+  
+  <!-- State Management -->
+  <rect x="360" y="120" width="120" height="60" fill="#3b82f6" rx="5"/>
+  <text x="420" y="145" text-anchor="middle" class="component">Zustand</text>
+  <text x="420" y="165" text-anchor="middle" class="component">State Management</text>
+  
+  <!-- Visualization -->
+  <rect x="500" y="120" width="120" height="60" fill="#3b82f6" rx="5"/>
+  <text x="560" y="145" text-anchor="middle" class="component">Recharts</text>
+  <text x="560" y="165" text-anchor="middle" class="component">Data Visualization</text>
+  
+  <!-- Build Tools -->
+  <rect x="640" y="120" width="80" height="60" fill="#3b82f6" rx="5"/>
+  <text x="680" y="145" text-anchor="middle" class="component">Vite</text>
+  <text x="680" y="165" text-anchor="middle" class="component">Build Tool</text>
+  
+  <!-- Backend Layer -->
+  <rect x="50" y="250" width="700" height="120" fill="#dcfce7" stroke="#10b981" stroke-width="2" rx="10"/>
+  <text x="70" y="270" class="label">Backend Layer</text>
+  
+  <!-- Node.js -->
+  <rect x="80" y="290" width="120" height="60" fill="#10b981" rx="5"/>
+  <text x="140" y="315" text-anchor="middle" class="component">Node.js</text>
+  <text x="140" y="335" text-anchor="middle" class="component">Express.js</text>
+  
+  <!-- API Routes -->
+  <rect x="220" y="290" width="120" height="60" fill="#10b981" rx="5"/>
+  <text x="280" y="310" text-anchor="middle" class="component">API Routes</text>
+  <text x="280" y="325" text-anchor="middle" class="component">• Connections</text>
+  <text x="280" y="340" text-anchor="middle" class="component">• Query</text>
+  
+  <!-- MongoDB Driver -->
+  <rect x="360" y="290" width="120" height="60" fill="#10b981" rx="5"/>
+  <text x="420" y="315" text-anchor="middle" class="component">MongoDB</text>
+  <text x="420" y="335" text-anchor="middle" class="component">Driver</text>
+  
+  <!-- Code Generation -->
+  <rect x="500" y="290" width="120" height="60" fill="#10b981" rx="5"/>
+  <text x="560" y="315" text-anchor="middle" class="component">Golang Code</text>
+  <text x="560" y="335" text-anchor="middle" class="component">Generator</text>
+  
+  <!-- Auth & Security -->
+  <rect x="640" y="290" width="80" height="60" fill="#10b981" rx="5"/>
+  <text x="680" y="315" text-anchor="middle" class="component">Security</text>
+  <text x="680" y="335" text-anchor="middle" class="component">& Auth</text>
+  
+  <!-- Database Layer -->
+  <rect x="50" y="420" width="700" height="120" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="10"/>
+  <text x="70" y="440" class="label">Database Layer</text>
+  
+  <!-- MongoDB -->
+  <rect x="200" y="460" width="150" height="60" fill="#f59e0b" rx="5"/>
+  <text x="275" y="485" text-anchor="middle" class="component">MongoDB</text>
+  <text x="275" y="505" text-anchor="middle" class="component">Database</text>
+  
+  <!-- Collections -->
+  <rect x="380" y="460" width="120" height="60" fill="#f59e0b" rx="5"/>
+  <text x="440" y="480" text-anchor="middle" class="component">Collections</text>
+  <text x="440" y="495" text-anchor="middle" class="component">• Documents</text>
+  <text x="440" y="510" text-anchor="middle" class="component">• Indexes</text>
+  
+  <!-- Data Storage -->
+  <rect x="520" y="460" width="120" height="60" fill="#f59e0b" rx="5"/>
+  <text x="580" y="485" text-anchor="middle" class="component">Data Storage</text>
+  <text x="580" y="505" text-anchor="middle" class="component">& Persistence</text>
+  
+  <!-- Arrows -->
+  <!-- Frontend to Backend -->
+  <line x1="400" y1="200" x2="400" y2="250" class="arrow"/>
+  <text x="410" y="230" class="label">HTTP/REST API</text>
+  
+  <!-- Backend to Database -->
+  <line x1="400" y1="370" x2="400" y2="420" class="arrow"/>
+  <text x="410" y="400" class="label">MongoDB Protocol</text>
+  
+  <!-- Docker Container Outline -->
+  <rect x="30" y="60" width="740" height="500" fill="none" stroke="#6366f1" stroke-width="3" stroke-dasharray="10,5" rx="15"/>
+  <text x="40" y="55" class="label" style="fill: #6366f1; font-weight: bold;">🐳 Docker Container Environment</text>
+</svg>

@@ -1,8 +1,23 @@
 # MongoDB 可视化工具
 
+<div align="center">
+  <img src="docs/images/architecture.svg" alt="MongoDB Visualization Tool Architecture" width="800"/>
+</div>
+
 一个现代化的 MongoDB 数据库可视化和管理工具，提供直观的界面来浏览、查询和管理 MongoDB 数据库。
 
+## 🖥️ 界面预览
+
+<div align="center">
+  <img src="docs/images/interface-mockup.svg" alt="Main Interface" width="1000"/>
+  <p><em>主界面展示数据库浏览器、文档编辑器和实时数据可视化</em></p>
+</div>
+
 ## ✨ 功能特性
+
+<div align="center">
+  <img src="docs/images/features.svg" alt="Feature Overview" width="900"/>
+</div>
 
 ### 🔗 连接管理
 - 支持多个 MongoDB 连接配置
@@ -52,6 +67,13 @@
 - 深色/浅色主题切换
 - 响应式布局
 - 快捷键支持
+
+## 🔄 用户工作流程
+
+<div align="center">
+  <img src="docs/images/workflow.svg" alt="User Workflow" width="1000"/>
+  <p><em>从数据库连接到代码生成的完整工作流程</em></p>
+</div>
 
 ## 🛠️ 技术栈
 
@@ -116,6 +138,37 @@ npm run build
 # 预览构建结果
 npm run preview
 ```
+
+### 📸 界面截图
+
+<details>
+<summary>🖼️ 查看应用界面截图</summary>
+
+#### 主控制台
+<div align="center">
+  <img src="docs/images/interface-mockup.svg" alt="Main Dashboard" width="800"/>
+  <p><em>完整界面展示数据库浏览器、文档编辑器和数据可视化</em></p>
+</div>
+
+#### 系统架构
+<div align="center">
+  <img src="docs/images/architecture.svg" alt="System Architecture" width="700"/>
+  <p><em>系统架构展示前端、后端和数据库层</em></p>
+</div>
+
+#### 功能亮点
+<div align="center">
+  <img src="docs/images/features.svg" alt="Feature Overview" width="800"/>
+  <p><em>所有可用功能和技术的综合概览</em></p>
+</div>
+
+#### 用户工作流程
+<div align="center">
+  <img src="docs/images/workflow.svg" alt="User Workflow" width="900"/>
+  <p><em>从连接设置到代码生成的分步工作流程</em></p>
+</div>
+
+</details>
 
 ## 🐳 Docker 一键部署
 
