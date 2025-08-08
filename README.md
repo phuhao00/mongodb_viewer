@@ -117,6 +117,138 @@ npm run build
 npm run preview
 ```
 
+## 🐳 Docker 一键部署
+
+### 环境要求
+- Docker 20.10+
+- Docker Compose 2.0+
+
+### 快速部署
+
+#### 方式一：使用部署脚本（推荐）
+
+**Linux/macOS:**
+```bash
+# 给脚本执行权限
+chmod +x deploy.sh
+
+# 一键启动所有服务
+./deploy.sh start
+
+# 查看服务状态
+./deploy.sh logs
+
+# 停止服务
+./deploy.sh stop
+
+# 清理所有资源
+./deploy.sh clean
+```
+
+**Windows:**
+```cmd
+# 一键启动所有服务
+deploy.bat start
+
+# 查看服务状态
+deploy.bat logs
+
+# 停止服务
+deploy.bat stop
+
+# 清理所有资源
+deploy.bat clean
+```
+
+#### 方式二：使用 Docker Compose
+
+```bash
+# 构建并启动所有服务
+docker-compose up -d --build
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+
+# 停止服务并删除数据卷
+docker-compose down -v
+```
+
+### 服务访问地址
+
+部署成功后，可通过以下地址访问：
+
+- **前端应用**: http://localhost:3000
+- **后端API**: http://localhost:3001
+- **MongoDB**: mongodb://localhost:27017
+  - 用户名: `admin`
+  - 密码: `password123`
+  - 数据库: `mongo_view`
+
+### Docker 服务说明
+
+| 服务 | 容器名 | 端口 | 说明 |
+|------|--------|------|------|
+| frontend | mongo_view_frontend | 3000:80 | React 前端应用 |
+| backend | mongo_view_backend | 3001:3001 | Node.js API 服务 |
+| mongodb | mongo_view_db | 27017:27017 | MongoDB 数据库 |
+
+### 数据持久化
+
+- MongoDB 数据存储在 Docker 卷 `mongodb_data` 中
+- 即使删除容器，数据也会保留
+- 如需完全清理数据，使用 `./deploy.sh clean` 或 `docker-compose down -v`
+
+### 自定义配置
+
+可以通过修改 `docker-compose.yml` 文件来自定义配置：
+
+```yaml
+# 修改端口映射
+ports:
+  - "8080:80"  # 前端端口改为 8080
+  - "8081:3001"  # 后端端口改为 8081
+
+# 修改环境变量
+environment:
+  MONGO_INITDB_ROOT_PASSWORD: your_password
+```
+
+### 故障排除
+
+**常见问题：**
+
+1. **端口冲突**
+   ```bash
+   # 检查端口占用
+   netstat -tulpn | grep :3000
+   # 或修改 docker-compose.yml 中的端口映射
+   ```
+
+2. **服务启动失败**
+   ```bash
+   # 查看详细日志
+   docker-compose logs [service_name]
+   ```
+
+3. **数据库连接失败**
+   ```bash
+   # 检查 MongoDB 服务状态
+   docker-compose exec mongodb mongosh --eval "db.adminCommand('ping')"
+   ```
+
+4. **清理并重新部署**
+   ```bash
+   # 完全清理后重新部署
+   ./deploy.sh clean
+   ./deploy.sh start
+   ```
+
 ## 📖 使用指南
 
 ### 1. 添加 MongoDB 连接
