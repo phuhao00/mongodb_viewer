@@ -20,7 +20,7 @@
 
 ## 🏗️ 系统架构
 
-![系统架构图](docs/images/architecture.svg)
+![系统架构图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/architecture.svg)
 
 采用现代化的三层架构设计，确保系统的可扩展性和维护性：
 
@@ -74,7 +74,7 @@
 
 ## 🔄 工作流程
 
-![工作流程图](docs/images/workflow.svg)
+![工作流程图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/workflow.svg)
 
 ```
 🚀 开始 → 🔗 连接配置 → 🗄️ 数据浏览 → 🔍 查询/AI分析 → ✏️ 数据编辑 → 📈 可视化 → 💻 代码生成
@@ -94,9 +94,11 @@
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-username/mongodb-visualization-tool.git
-cd mongodb-visualization-tool
+git clone https://github.com/phuhao00/mongodb_viewer.git
+cd mongodb_viewer
 ```
+
+> **注意**: 图片链接已更新为正确的GitHub仓库地址。
 
 2. **安装依赖**
 ```bash
