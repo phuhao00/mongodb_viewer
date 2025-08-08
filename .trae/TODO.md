@@ -1,11 +1,6 @@
 # TODO:
 
-- [x] backend-init: 初始化后端MongoDB连接和基础API结构 (priority: High)
-- [x] frontend-routes: 创建前端路由和页面组件结构 (priority: High)
-- [x] connection-management: 实现连接管理功能（前端+后端） (priority: High)
-- [x] passwordless-optimization: 优化无密码连接的数据库访问逻辑 (priority: High)
-- [x] database-browser: 实现数据库浏览功能 (priority: Medium)
-- [ ] query-editor: 实现查询编辑器功能 (priority: Medium)
-- [ ] data-visualization: 实现数据可视化功能 (priority: Medium)
-- [ ] testing: 测试和优化整体功能 (priority: Medium)
-- [ ] settings-theme: 实现设置页面和主题切换 (priority: Low)
+- [x] delete-corrupted-files: 删除损坏的PNG文件和architecture.txt文件 (priority: High)
+- [x] convert-svg-to-jpeg: 将SVG文件转换为JPEG格式 (priority: High)
+- [x] update-readme-jpeg: 更新README.md中的图片引用从PNG改为JPEG (priority: High)
+- [ ] commit-jpeg-changes: 提交JPEG图片格式的更改 (**IN PROGRESS**) (priority: Medium)

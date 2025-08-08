@@ -20,7 +20,7 @@
 
 ## 🏗️ 系统架构
 
-![系统架构图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/architecture.png)
+![系统架构图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/architecture.jpg)
 
 采用现代化的三层架构设计，确保系统的可扩展性和维护性：
 
@@ -74,7 +74,7 @@
 
 ## 🔄 工作流程
 
-![工作流程图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/workflow.png)
+![工作流程图](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/workflow.jpg)
 
 ```
 🚀 开始 &rarr; 🔗 连接配置 &rarr; 🗄️ 数据浏览 &rarr; 🔍 查询/AI分析 &rarr; ✏️ 数据编辑 &rarr; 📈 可视化 &rarr; 💻 代码生成
