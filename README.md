@@ -1,7 +1,7 @@
 # MongoDB 可视化工具
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/architecture.svg" alt="MongoDB Visualization Tool Architecture" width="800"/>
+  <img src="./docs/images/architecture.svg" alt="MongoDB Visualization Tool Architecture" width="800"/>
 </div>
 
 一个现代化的 MongoDB 数据库可视化和管理工具，提供直观的界面来浏览、查询和管理 MongoDB 数据库。
@@ -9,14 +9,14 @@
 ## 🖥️ 界面预览
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/interface-mockup.svg" alt="Main Interface" width="1000"/>
+  <img src="./docs/images/interface-mockup.svg" alt="Main Interface" width="1000"/>
   <p><em>主界面展示数据库浏览器、文档编辑器和实时数据可视化</em></p>
 </div>
 
 ## ✨ 功能特性
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/features.svg" alt="Feature Overview" width="900"/>
+  <img src="./docs/images/features.svg" alt="Feature Overview" width="900"/>
 </div>
 
 ### 🔗 连接管理
@@ -71,7 +71,7 @@
 ## 🔄 用户工作流程
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/workflow.svg" alt="User Workflow" width="1000"/>
+  <img src="./docs/images/workflow.svg" alt="User Workflow" width="1000"/>
   <p><em>从数据库连接到代码生成的完整工作流程</em></p>
 </div>
 
@@ -80,7 +80,7 @@
 ### 整体架构设计
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/architecture.svg" alt="System Architecture" width="800"/>
+  <img src="./docs/images/architecture.svg" alt="System Architecture" width="800"/>
   <p><em>三层架构：前端展示层、后端服务层、数据存储层</em></p>
 </div>
 
