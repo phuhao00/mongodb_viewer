@@ -1,7 +1,39 @@
 # MongoDB 可视化工具
 
 <div align="center">
-  <img src="./docs/images/architecture.svg" alt="MongoDB Visualization Tool Architecture" width="800"/>
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MongoDB Visualization Tool                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                        Frontend Layer                              │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│   React 18  │ UI Components│  Zustand   │  Recharts   │    Vite     │
+│ TypeScript  │ Tailwind CSS │   State    │    Data     │ Build Tool  │
+│             │ Lucide Icons │ Management │Visualization│             │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                              HTTP/REST API
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Backend Layer                               │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│  Node.js    │ API Routes  │  MongoDB    │ Golang Code │ Security    │
+│ Express.js  │• Connections│   Driver    │  Generator  │  & Auth     │
+│             │• Query      │             │             │             │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                            MongoDB Protocol
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Database Layer                              │
+├─────────────────┬─────────────────┬─────────────────────────────────┤
+│    MongoDB      │   Collections   │      Data Storage               │
+│   Database      │  • Documents    │     & Persistence               │
+│                 │  • Indexes      │                                 │
+└─────────────────┴─────────────────┴─────────────────────────────────┘
+```
+
 </div>
 
 一个现代化的 MongoDB 数据库可视化和管理工具，提供直观的界面来浏览、查询和管理 MongoDB 数据库。
@@ -9,14 +41,69 @@
 ## 🖥️ 界面预览
 
 <div align="center">
-  <img src="./docs/images/interface-mockup.svg" alt="Main Interface" width="1000"/>
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  MongoDB Visualization Tool - Main Interface                       │
+├─────────────────────────────────────────────────────────────────────┤
+│ [🔗 Connect] [📊 Dashboard] [🔍 Query] [⚙️ Settings]              │
+├─────────────────┬───────────────────────────────────────────────────┤
+│   Connections   │              Main Content Area                   │
+│                 │                                                   │
+│ • Local DB      │  ┌─────────────────────────────────────────────┐ │
+│ • Remote DB     │  │         Database Browser                    │ │
+│ • Test DB       │  │  ┌─────────┬─────────┬─────────┬─────────┐  │ │
+│                 │  │  │ users   │products │ orders  │ logs    │  │ │
+│ [+ New]         │  │  └─────────┴─────────┴─────────┴─────────┘  │ │
+│                 │  │                                             │ │
+│                 │  │         Query Editor                        │ │
+│                 │  │  ┌─────────────────────────────────────────┐ │
+│                 │  │  │ db.users.find({})                      │ │
+│                 │  │  └─────────────────────────────────────────┘ │
+│                 │  │  [▶️ Run] [💾 Save] [📋 Export]              │ │
+│                 │  └─────────────────────────────────────────────┘ │
+└─────────────────┴───────────────────────────────────────────────────┘
+```
+
   <p><em>主界面展示数据库浏览器、文档编辑器和实时数据可视化</em></p>
 </div>
 
 ## ✨ 功能特性
 
 <div align="center">
-  <img src="./docs/images/features.svg" alt="Feature Overview" width="900"/>
+
+```
+🔗 连接管理
+├── 多数据库连接支持
+├── 连接配置保存
+├── 连接状态监控
+└── 安全认证
+
+📊 数据浏览
+├── 数据库结构展示
+├── 集合数据预览
+├── 文档详细查看
+└── 索引信息显示
+
+🔍 查询功能
+├── MongoDB查询语法支持
+├── 查询结果展示
+├── 查询历史记录
+└── 结果导出功能
+
+📈 数据可视化
+├── 图表展示
+├── 统计分析
+├── 数据趋势
+└── 自定义视图
+
+⚙️ 系统设置
+├── 主题切换
+├── 语言设置
+├── 性能配置
+└── 用户偏好
+```
+
 </div>
 
 ### 🔗 连接管理
@@ -71,7 +158,37 @@
 ## 🔄 用户工作流程
 
 <div align="center">
-  <img src="./docs/images/workflow.svg" alt="User Workflow" width="1000"/>
+
+```
+开始
+  │
+  ▼
+┌─────────────┐
+│  连接数据库  │
+└─────────────┘
+  │
+  ▼
+┌─────────────┐
+│  选择数据库  │
+└─────────────┘
+  │
+  ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  浏览数据   │ ←→ │  执行查询   │ ←→ │  数据可视化  │
+└─────────────┘    └─────────────┘    └─────────────┘
+  │                  │                  │
+  ▼                  ▼                  ▼
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  编辑文档   │    │  保存查询   │    │  导出数据   │
+└─────────────┘    └─────────────┘    └─────────────┘
+  │                  │                  │
+  └──────────────────┼──────────────────┘
+                     ▼
+                 ┌─────────────┐
+                 │    结束     │
+                 └─────────────┘
+```
+
   <p><em>从数据库连接到代码生成的完整工作流程</em></p>
 </div>
 
@@ -79,8 +196,39 @@
 
 ### 整体架构设计
 
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    MongoDB Visualization Tool                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                        Frontend Layer                              │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│   React 18  │ UI Components│  Zustand   │  Recharts   │    Vite     │
+│ TypeScript  │ Tailwind CSS │   State    │    Data     │ Build Tool  │
+│             │ Lucide Icons │ Management │Visualization│             │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                              HTTP/REST API
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Backend Layer                               │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│  Node.js    │ API Routes  │  MongoDB    │ Golang Code │ Security    │
+│ Express.js  │• Connections│   Driver    │  Generator  │  & Auth     │
+│             │• Query      │             │             │             │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                            MongoDB Protocol
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Database Layer                              │
+├─────────────────┬─────────────────┬─────────────────────────────────┤
+│    MongoDB      │   Collections   │      Data Storage               │
+│   Database      │  • Documents    │     & Persistence               │
+│                 │  • Indexes      │                                 │
+└─────────────────┴─────────────────┴─────────────────────────────────┘
+```
+
 <div align="center">
-  <img src="./docs/images/architecture.svg" alt="System Architecture" width="800"/>
   <p><em>三层架构：前端展示层、后端服务层、数据存储层</em></p>
 </div>
 
@@ -465,25 +613,137 @@ npm run preview
 
 #### 主控制台
 <div align="center">
-  <img src="https://raw.githubusercontent.com/your-username/mongo_view/main/docs/images/interface-mockup.svg" alt="Main Dashboard" width="800"/>
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  MongoDB Visualization Tool - Dashboard                            │
+├─────────────────────────────────────────────────────────────────────┤
+│ [🏠 Home] [📊 Analytics] [🔍 Search] [⚙️ Config]                  │
+├─────────────────┬───────────────────────────────────────────────────┤
+│   Navigation    │              Dashboard Content                   │
+│                 │                                                   │
+│ 📁 Databases    │  ┌─────────────────────────────────────────────┐ │
+│ ├─ UserDB       │  │         Connection Status                   │ │
+│ ├─ ProductDB    │  │  🟢 Connected: 3 databases                  │ │
+│ └─ LogDB        │  │  📊 Total Documents: 1,234,567             │ │
+│                 │  │  ⚡ Avg Query Time: 45ms                   │ │
+│ 🔧 Tools        │  └─────────────────────────────────────────────┘ │
+│ ├─ Query        │                                                   │
+│ ├─ Import       │  ┌─────────────────────────────────────────────┐ │
+│ └─ Export       │  │         Recent Activity                     │ │
+│                 │  │  • Query executed on users collection       │ │
+│ ⚙️ Settings     │  │  • Document updated in products             │ │
+│                 │  │  • New connection added                     │ │
+│                 │  └─────────────────────────────────────────────┘ │
+└─────────────────┴───────────────────────────────────────────────────┘
+```
   <p><em>完整界面展示数据库浏览器、文档编辑器和数据可视化</em></p>
 </div>
 
 #### 系统架构
 <div align="center">
-  <img src="https://raw.githubusercontent.com/your-username/mongo_view/main/docs/images/architecture.svg" alt="System Architecture" width="700"/>
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    System Architecture                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                        Frontend (React)                            │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│ Components  │   Routing   │    State    │   Styling   │   Build     │
+│   React     │   Router    │  Zustand    │ Tailwind    │    Vite     │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                              REST API / WebSocket
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Backend (Node.js)                           │
+├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┤
+│   Server    │   Routes    │ Middleware  │   Database  │   Security  │
+│  Express    │   API       │   CORS      │   Driver    │    Auth     │
+└─────────────┴─────────────┴─────────────┴─────────────┴─────────────┘
+                                    │
+                            MongoDB Wire Protocol
+                                    │
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Database (MongoDB)                          │
+├─────────────────┬─────────────────┬─────────────────────────────────┤
+│   Collections   │     Indexes     │         Replication             │
+│   Documents     │   Aggregation   │         Sharding                │
+└─────────────────┴─────────────────┴─────────────────────────────────┘
+```
   <p><em>系统架构展示前端、后端和数据库层</em></p>
 </div>
 
 #### 功能亮点
 <div align="center">
-  <img src="https://raw.githubusercontent.com/your-username/mongo_view/main/docs/images/features.svg" alt="Feature Overview" width="800"/>
+```
+🔗 连接管理 (Connection Management)
+├── 🌐 多数据库连接支持
+├── 💾 连接配置保存
+├── 📊 连接状态监控
+├── 🔐 安全认证
+└── 🧪 连接测试
+
+📊 数据浏览 (Data Browsing)
+├── 🌳 数据库结构展示
+├── 📄 集合数据预览
+├── 🔍 文档详细查看
+├── 📈 索引信息显示
+└── 📊 统计信息
+
+🔍 查询功能 (Query Features)
+├── 💻 MongoDB查询语法支持
+├── 📋 查询结果展示
+├── 📚 查询历史记录
+├── 📤 结果导出功能
+└── ⚡ 实时查询执行
+
+📈 数据可视化 (Data Visualization)
+├── 📊 多种图表类型
+├── 📈 统计分析
+├── 📉 数据趋势
+├── 🎨 自定义视图
+└── 📤 图表导出
+
+⚙️ 系统设置 (System Settings)
+├── 🌙 主题切换
+├── 🌍 语言设置
+├── ⚡ 性能配置
+├── 👤 用户偏好
+└── 🔧 高级选项
+```
   <p><em>所有可用功能和技术的综合概览</em></p>
 </div>
 
 #### 用户工作流程
 <div align="center">
-  <img src="https://raw.githubusercontent.com/your-username/mongo_view/main/docs/images/workflow.svg" alt="User Workflow" width="900"/>
+```
+用户工作流程 (User Workflow)
+
+开始 → 连接设置 → 数据浏览 → 查询执行 → 代码生成 → 结束
+  │         │         │         │         │         │
+  ▼         ▼         ▼         ▼         ▼         ▼
+┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐
+│启动 │ │配置 │ │浏览 │ │查询 │ │生成 │ │完成 │
+│应用 │ │连接 │ │数据 │ │数据 │ │代码 │ │任务 │
+└─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘
+    │       │       │       │       │       │
+    ▼       ▼       ▼       ▼       ▼       ▼
+  打开   → 添加   → 选择   → 编写   → 导出   → 保存
+  界面     数据库   集合     查询     结构体   结果
+
+分支流程:
+├── 📝 文档编辑
+│   ├── 新建文档
+│   ├── 修改文档
+│   └── 删除文档
+├── 📊 数据可视化
+│   ├── 选择图表类型
+│   ├── 配置数据源
+│   └── 导出图表
+└── ⚙️ 系统配置
+    ├── 主题设置
+    ├── 连接管理
+    └── 用户偏好
+```
   <p><em>从连接设置到代码生成的分步工作流程</em></p>
 </div>
 
