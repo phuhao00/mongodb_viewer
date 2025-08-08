@@ -6,6 +6,7 @@ import Connections from './pages/Connections';
 import DatabaseBrowser from './pages/DatabaseBrowser';
 import QueryEditor from './pages/QueryEditor';
 import DataVisualization from './pages/DataVisualization';
+import AIPage from './pages/AIPage';
 import Settings from './pages/Settings';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="/database" element={<DatabaseBrowser />} />
             <Route path="/query" element={<QueryEditor />} />
             <Route path="/visualization" element={<DataVisualization />} />
+            <Route path="/ai" element={<AIPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/connections" replace />} />
           </Routes>

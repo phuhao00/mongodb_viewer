@@ -11,13 +11,15 @@ import authRoutes from './routes/auth.js';
 import connectionsRoutes from './routes/connections.js';
 import queryRoutes from './routes/query.js';
 import visualizeRoutes from './routes/visualize.js';
+import aiRoutes from './routes/ai.js';
+import cacheRoutes from './routes/cache.js';
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// load env
-dotenv.config();
+// load env from project root
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 
 const app: express.Application = express();
@@ -33,6 +35,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionsRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/visualize', visualizeRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/cache', cacheRoutes);
 
 /**
  * health

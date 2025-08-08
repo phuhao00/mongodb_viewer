@@ -4,6 +4,7 @@ import {
   Database, 
   Search, 
   BarChart3, 
+  Bot,
   Settings, 
   Moon, 
   Sun,
@@ -38,6 +39,11 @@ const navigation = [
     name: '数据可视化',
     href: '/visualization',
     icon: BarChart3
+  },
+  {
+    name: 'AI助手',
+    href: '/ai',
+    icon: Bot
   },
   {
     name: '设置',

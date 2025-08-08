@@ -43,7 +43,7 @@ class DatabaseManager {
   }
 
   // 测试连接
-  async testConnection(uri: string, options: any = {}): Promise<boolean> {
+  async testConnection(uri: string, options: any = {}): Promise<{ success: boolean; error?: string; canListDatabases?: boolean; message?: string }> {
     let client: MongoClient | null = null;
     try {
       client = new MongoClient(uri, {
@@ -54,10 +54,61 @@ class DatabaseManager {
       
       await client.connect();
       await client.db('admin').command({ ping: 1 });
-      return true;
-    } catch (error) {
+      
+      // 测试listDatabases权限
+      let canListDatabases = false;
+      let permissionMessage = '';
+      try {
+        await client.db('admin').command({ listDatabases: 1 });
+        canListDatabases = true;
+      } catch (listError: any) {
+        console.warn('listDatabases权限测试失败:', listError.message);
+        // 如果是认证错误
+        if (listError.code === 13 || listError.codeName === 'Unauthorized') {
+          // 检查URI是否包含认证信息
+          const hasAuth = uri.includes('@');
+          if (hasAuth) {
+            permissionMessage = '认证失败，请检查用户名、密码和认证数据库配置。';
+          } else {
+            permissionMessage = '连接成功！无密码连接模式下，某些操作可能需要数据库权限。如需完整功能，请配置认证信息。';
+          }
+        } else {
+          permissionMessage = '连接成功，但当前用户权限不足以访问数据库列表。';
+        }
+      }
+      
+      return { 
+        success: true, 
+        canListDatabases,
+        message: permissionMessage || '连接测试成功，可以访问数据库列表'
+      };
+    } catch (error: any) {
       console.error('连接测试失败:', error);
-      return false;
+      
+      let errorMessage = '连接失败';
+      
+      // 认证错误
+      if (error.code === 13 || error.codeName === 'Unauthorized') {
+        errorMessage = '认证失败：用户名、密码或认证数据库不正确';
+      }
+      // 网络连接错误
+      else if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
+        errorMessage = '无法连接到数据库服务器，请检查主机地址和端口';
+      }
+      // 超时错误
+      else if (error.message?.includes('timeout')) {
+        errorMessage = '连接超时，请检查网络连接和服务器状态';
+      }
+      // DNS解析错误
+      else if (error.code === 'ENOTFOUND') {
+        errorMessage = '无法解析主机地址，请检查主机名是否正确';
+      }
+      // 其他认证相关错误
+      else if (error.message?.includes('authentication')) {
+        errorMessage = '认证过程中发生错误，请检查认证配置';
+      }
+      
+      return { success: false, error: errorMessage };
     } finally {
       if (client) {
         await client.close();
@@ -76,15 +127,74 @@ class DatabaseManager {
   }
 
   // 获取数据库列表
-  async getDatabases(connectionId: string): Promise<any[]> {
+  async getDatabases(connectionId: string): Promise<{ success: boolean; data?: any[]; error?: string; message?: string }> {
     const client = this.getConnection(connectionId);
     if (!client) {
-      throw new Error('连接不存在');
+      return { success: false, error: '连接不存在' };
     }
 
-    const adminDb = client.db('admin');
-    const result = await adminDb.command({ listDatabases: 1 });
-    return result.databases;
+    try {
+      // 首先尝试使用admin数据库执行listDatabases命令
+      const adminDb = client.db('admin');
+      const result = await adminDb.command({ listDatabases: 1 });
+      return { success: true, data: result.databases };
+    } catch (error: any) {
+      console.error('获取数据库列表失败:', error);
+      
+      // 如果是认证错误，提供更详细的错误信息
+      if (error.code === 13 || error.codeName === 'Unauthorized') {
+        // 获取连接信息来判断是否为无密码连接
+        const connection = this.connections.get(connectionId);
+        // 从连接的配置中获取URI信息，如果没有则尝试从其他地方获取
+        let connectionUri = '';
+        if (connection && (connection as any).uri) {
+          connectionUri = (connection as any).uri;
+        }
+        const hasAuth = connectionUri.includes('@');
+        
+        if (hasAuth) {
+          return { success: false, error: '认证失败。请检查用户名、密码和认证数据库配置是否正确。' };
+        } else {
+          // 对于无密码连接，尝试探测常见数据库并提供默认选项
+          const defaultDatabases = [];
+          const commonDbNames = ['test', 'admin', 'local', 'mydb', 'app', 'data'];
+          
+          for (const dbName of commonDbNames) {
+            try {
+              const db = client.db(dbName);
+              // 尝试获取集合列表来验证数据库是否存在
+              const collections = await db.listCollections().toArray();
+              defaultDatabases.push({
+                name: dbName,
+                sizeOnDisk: 0,
+                empty: collections.length === 0
+              });
+            } catch (dbError) {
+              // 如果无法访问该数据库，跳过
+              continue;
+            }
+          }
+          
+          return { 
+            success: true, 
+            data: defaultDatabases,
+            message: defaultDatabases.length > 0 
+              ? `无密码连接成功！发现 ${defaultDatabases.length} 个可访问的数据库。` 
+              : '无密码连接成功！未发现可访问的数据库，您可以手动输入数据库名称进行访问。'
+          };
+        }
+      }
+      // 如果是其他认证相关错误
+      else if (error.message && error.message.includes('authentication')) {
+        return { success: false, error: '认证失败。请验证用户名、密码和认证数据库是否正确。' };
+      }
+      // 权限不足
+      else if (error.message && error.message.includes('not authorized')) {
+        return { success: false, error: '当前用户没有足够权限访问数据库列表。请使用具有listDatabases权限的用户。' };
+      }
+      
+      return { success: false, error: '获取数据库列表失败' };
+    }
   }
 
   // 获取集合列表

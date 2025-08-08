@@ -47,6 +47,7 @@ interface CollectionInfo {
     avgObjSize: number;
     storageSize: number;
     indexes: number;
+    totalIndexSize: number;
   };
 }
 
@@ -63,6 +64,8 @@ const DatabaseBrowser: React.FC = () => {
   const [editingDocument, setEditingDocument] = useState<any>(null);
   const [showCodeGenerator, setShowCodeGenerator] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [manualDbName, setManualDbName] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
 
   const currentConn = connections.find(c => c.id === currentConnectionId);
 
@@ -82,7 +85,14 @@ const DatabaseBrowser: React.FC = () => {
       setLoading('databases', true);
       const response = await api.connections.getDatabases(currentConnectionId);
       if (response.success) {
-        setDatabases(response.data);
+        setDatabases(response.data || []);
+        // 如果有友好消息（通常是无密码连接的提示），显示为信息提示
+        if (response.message) {
+          toast.success(response.message);
+        }
+      } else {
+        // 只有真正的错误才显示错误提示
+        toast.error(response.error || '加载数据库失败');
       }
     } catch (error: any) {
       console.error('加载数据库失败:', error);
@@ -232,6 +242,70 @@ const DatabaseBrowser: React.FC = () => {
     db.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleManualDatabaseAccess = async () => {
+    if (!manualDbName.trim()) {
+      toast.error('请输入数据库名称');
+      return;
+    }
+
+    if (!currentConnectionId) {
+      toast.error('请先选择一个连接');
+      return;
+    }
+
+    try {
+      // 尝试访问手动输入的数据库
+      const response = await api.connections.getCollections(currentConnectionId, manualDbName.trim());
+      if (response.success) {
+        // 将手动输入的数据库添加到数据库列表中
+        const newDatabase = {
+          name: manualDbName.trim(),
+          sizeOnDisk: 0,
+          empty: response.data.length === 0,
+          collections: response.data.map((col: any) => ({
+            name: col.name,
+            type: col.type || 'collection',
+            options: col.options || {},
+            stats: col.stats ? {
+              count: col.stats.count || 0,
+              size: col.stats.size || 0,
+              avgObjSize: col.stats.avgObjSize || 0,
+              storageSize: col.stats.storageSize || 0,
+              indexes: col.stats.indexes || 0,
+              totalIndexSize: col.stats.totalIndexSize || 0
+            } : undefined
+          }))
+        };
+        
+        // 检查数据库是否已存在
+        const existingDb = databases.find(db => db.name === manualDbName.trim());
+        if (!existingDb) {
+          setDatabases([...databases, newDatabase]);
+        } else {
+          // 更新现有数据库的集合信息
+          const updatedDatabases = databases.map(db => 
+            db.name === manualDbName.trim() 
+              ? { ...db, collections: newDatabase.collections }
+              : db
+          );
+          setDatabases(updatedDatabases);
+        }
+        
+        // 展开该数据库
+        setExpandedDatabases(prev => new Set([...prev, manualDbName.trim()]));
+        
+        toast.success(`成功访问数据库: ${manualDbName.trim()}`);
+        setManualDbName('');
+        setShowManualInput(false);
+      } else {
+        toast.error('无法访问该数据库');
+      }
+    } catch (error: any) {
+      console.error('访问数据库失败:', error);
+      toast.error(error.message || '访问数据库失败');
+    }
+  };
+
   if (!currentConnection) {
     return (
       <div className="p-6">
@@ -288,56 +362,109 @@ const DatabaseBrowser: React.FC = () => {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
             </div>
-          ) : filteredDatabases.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              暂无数据库
-            </div>
           ) : (
-            <div className="p-2">
-              {filteredDatabases.map((database) => (
-                <div key={database.name} className="mb-2">
-                  <button
-                    onClick={() => toggleDatabase(database.name)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {expandedDatabases.has(database.name) ? (
-                      <ChevronDown className="w-4 h-4 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-500" />
-                    )}
-                    <Database className="w-4 h-4 text-blue-600" />
-                    <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">
-                      {database.name}
-                    </span>
-                  </button>
-                  
-                  {expandedDatabases.has(database.name) && database.collections && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {database.collections.map((collection) => (
-                        <button
-                          key={collection.name}
-                          onClick={() => loadCollectionData(database.name, collection.name)}
-                          className={cn(
-                            'w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg transition-colors text-sm',
-                            selectedCollection === collection.name && currentDatabase === database.name
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                          )}
-                        >
-                          <FileText className="w-4 h-4" />
-                          <span className="flex-1">{collection.name}</span>
-                          {collection.stats && (
-                            <span className="text-xs text-gray-500">
-                              {formatNumber(collection.stats.count)}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+            <>
+              {filteredDatabases.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  暂无数据库
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="p-2">
+                  {filteredDatabases.map((database) => (
+                    <div key={database.name} className="mb-2">
+                      <button
+                        onClick={() => toggleDatabase(database.name)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {expandedDatabases.has(database.name) ? (
+                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                        )}
+                        <Database className="w-4 h-4 text-blue-600" />
+                        <span className="flex-1 text-sm font-medium text-gray-900 dark:text-white">
+                          {database.name}
+                        </span>
+                      </button>
+                      
+                      {expandedDatabases.has(database.name) && database.collections && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {database.collections.map((collection) => (
+                            <button
+                              key={collection.name}
+                              onClick={() => loadCollectionData(database.name, collection.name)}
+                              className={cn(
+                                'w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg transition-colors text-sm',
+                                selectedCollection === collection.name && currentDatabase === database.name
+                                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
+                                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                              )}
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span className="flex-1">{collection.name}</span>
+                              {collection.stats && (
+                                <span className="text-xs text-gray-500">
+                                  {formatNumber(collection.stats.count)}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* 手动输入数据库名称 */}
+              <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+                {!showManualInput ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowManualInput(true)}
+                    className="w-full"
+                  >
+                    <Database className="w-4 h-4 mr-2" />
+                    手动输入数据库名称
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="输入数据库名称..."
+                      value={manualDbName}
+                      onChange={(e) => setManualDbName(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleManualDatabaseAccess();
+                        }
+                      }}
+                      className="text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleManualDatabaseAccess}
+                        className="flex-1"
+                      >
+                        访问
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowManualInput(false);
+                          setManualDbName('');
+                        }}
+                        className="flex-1"
+                      >
+                        取消
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>

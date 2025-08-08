@@ -42,7 +42,7 @@ export const connectionsAPI = {
   
   // 测试连接
   test: (data: { uri: string; options?: any }) =>
-    request<{ success: boolean; connected: boolean; message: string }>('/connections/test', {
+    request<{ success: boolean; connected: boolean; canListDatabases: boolean; message: string; error?: string }>('/connections/test', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -55,7 +55,7 @@ export const connectionsAPI = {
   
   // 获取数据库列表
   getDatabases: (connectionId: string) =>
-    request<{ success: boolean; data: any[] }>(`/connections/${connectionId}/databases`),
+    request<{ success: boolean; data?: any[]; error?: string; message?: string }>(`/connections/${connectionId}/databases`),
   
   // 获取集合列表
   getCollections: (connectionId: string, databaseName: string) =>

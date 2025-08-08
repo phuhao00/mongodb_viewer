@@ -1,7 +1,11 @@
 # TODO:
 
-- [x] check-database-connection: 检查MongoDB数据库连接状态和配置 (priority: High)
-- [x] verify-api-endpoints: 验证后端API接口是否正常响应 (priority: High)
-- [x] check-frontend-data-fetch: 检查前端数据获取和显示逻辑 (priority: High)
-- [x] verify-database-data: 确认数据库中是否有测试数据 (priority: Medium)
-- [x] check-error-logs: 检查浏览器控制台和服务器错误日志 (priority: Medium)
+- [x] backend-init: 初始化后端MongoDB连接和基础API结构 (priority: High)
+- [x] frontend-routes: 创建前端路由和页面组件结构 (priority: High)
+- [x] connection-management: 实现连接管理功能（前端+后端） (priority: High)
+- [x] passwordless-optimization: 优化无密码连接的数据库访问逻辑 (priority: High)
+- [x] database-browser: 实现数据库浏览功能 (priority: Medium)
+- [ ] query-editor: 实现查询编辑器功能 (priority: Medium)
+- [ ] data-visualization: 实现数据可视化功能 (priority: Medium)
+- [ ] testing: 测试和优化整体功能 (priority: Medium)
+- [ ] settings-theme: 实现设置页面和主题切换 (priority: Low)

@@ -131,12 +131,25 @@ router.post('/test', async (req: Request, res: Response) => {
       });
     }
 
-    const isValid = await dbManager.testConnection(uri, options);
+    const result = await dbManager.testConnection(uri, options);
+    
+    let message = '连接失败';
+    if (result.success) {
+      if (result.canListDatabases) {
+        message = '连接成功，可以访问数据库列表';
+      } else {
+        message = result.error || '连接成功，但可能需要认证才能访问数据库列表';
+      }
+    } else {
+      message = result.error || '连接失败';
+    }
     
     res.json({
       success: true,
-      connected: isValid,
-      message: isValid ? '连接成功' : '连接失败'
+      connected: result.success,
+      canListDatabases: result.canListDatabases || false,
+      message,
+      error: result.error
     });
   } catch (error) {
     console.error('测试连接失败:', error);
@@ -191,12 +204,21 @@ router.get('/:connectionId/databases', async (req: Request, res: Response) => {
       });
     }
 
-    const databases = await dbManager.getDatabases(connectionId);
+    const result = await dbManager.getDatabases(connectionId);
     
-    res.json({
-      success: true,
-      data: databases
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result.data,
+        message: result.message
+      });
+    } else {
+      res.status(403).json({
+        success: false,
+        message: result.error || '获取数据库列表失败',
+        requiresAuth: result.error?.includes('认证') || result.error?.includes('权限')
+      });
+    }
   } catch (error) {
     console.error('获取数据库列表失败:', error);
     res.status(500).json({
