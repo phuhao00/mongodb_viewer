@@ -1,7 +1,7 @@
 # TODO:
 
-- [x] add-screenshots: Add screenshots of the main interface and key features (priority: High)
-- [x] enhance-readme-visuals: Update README with visual documentation and examples (priority: High)
-- [x] create-architecture-diagram: Create and add architecture diagram showing system components (priority: Medium)
-- [x] add-feature-demos: Add visual examples of database browsing, query editor, and data visualization (priority: Medium)
-- [ ] commit-visual-updates: Commit and push the enhanced README with visual documentation (**IN PROGRESS**) (priority: Low)
+- [x] check-database-connection: 检查MongoDB数据库连接状态和配置 (priority: High)
+- [x] verify-api-endpoints: 验证后端API接口是否正常响应 (priority: High)
+- [x] check-frontend-data-fetch: 检查前端数据获取和显示逻辑 (priority: High)
+- [x] verify-database-data: 确认数据库中是否有测试数据 (priority: Medium)
+- [x] check-error-logs: 检查浏览器控制台和服务器错误日志 (priority: Medium)
