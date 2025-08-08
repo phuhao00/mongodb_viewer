@@ -6,11 +6,11 @@
 
 🚀 **高效** • 🎨 **美观** • 🔧 **易用** • 🔒 **安全**
 
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&amp;logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&amp;logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&amp;logo=node.js)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&amp;logo=mongodb)](https://www.mongodb.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&amp;logo=docker)](https://www.docker.com/)
 
 </div>
 
@@ -103,7 +103,7 @@ cd mongodb_viewer
 2. **安装依赖**
 ```bash
 npm install
-cd api && npm install && cd ..
+cd api &amp;&amp; npm install &amp;&amp; cd ..
 ```
 
 3. **环境配置**
@@ -201,7 +201,7 @@ docker-compose ps
 npm run test
 
 # 后端测试
-cd api && npm run test
+cd api &amp;&amp; npm run test
 
 # 测试覆盖率
 npm run test:coverage
