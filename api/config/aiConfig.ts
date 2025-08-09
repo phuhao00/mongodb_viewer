@@ -3,14 +3,52 @@ import dotenv from 'dotenv';
 // 加载环境变量
 dotenv.config();
 
+// 支持的AI提供商类型
+export type AIProvider = 'openai' | 'zhipu' | 'qwen' | 'kimi' | 'deepseek';
+
+// 基础模型配置接口
+export interface BaseModelConfig {
+  apiKey: string;
+  model: string;
+  maxTokens: number;
+  temperature: number;
+  timeout: number;
+  baseURL?: string;
+  hasApiKey?: boolean;
+}
+
+// 各提供商特定配置
+export interface OpenAIConfig extends BaseModelConfig {
+  organization?: string;
+}
+
+export interface ZhipuConfig extends BaseModelConfig {
+  // 智普AI特定配置
+}
+
+export interface QwenConfig extends BaseModelConfig {
+  // 千问特定配置
+}
+
+export interface KimiConfig extends BaseModelConfig {
+  // Kimi特定配置
+}
+
+export interface DeepSeekConfig extends BaseModelConfig {
+  // DeepSeek特定配置
+}
+
 export interface AIConfig {
-  // OpenAI配置
-  openai: {
-    apiKey: string;
-    model: string;
-    maxTokens: number;
-    temperature: number;
-    timeout: number;
+  // 当前选择的AI提供商
+  currentProvider: AIProvider;
+  
+  // 各AI提供商配置
+  providers: {
+    openai: OpenAIConfig;
+    zhipu: ZhipuConfig;
+    qwen: QwenConfig;
+    kimi: KimiConfig;
+    deepseek: DeepSeekConfig;
   };
   
   // Redis缓存配置
@@ -52,13 +90,65 @@ export interface AIConfig {
  * 获取AI配置
  */
 export function getAIConfig(): AIConfig {
+  // 确保currentProvider是有效的AIProvider值
+  const validProviders: AIProvider[] = ['openai', 'zhipu', 'qwen', 'kimi', 'deepseek'];
+  const envProvider = process.env.AI_PROVIDER as AIProvider;
+  const currentProvider = validProviders.includes(envProvider) ? envProvider : 'openai';
+  
   return {
-    openai: {
-      apiKey: process.env.OPENAI_API_KEY || process.env.AI_API_KEY || '',
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '2000'),
-      temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
-      timeout: parseInt(process.env.OPENAI_TIMEOUT || '30000')
+    currentProvider,
+    
+    providers: {
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY || '',
+        model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+        maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '2000'),
+        temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
+        timeout: parseInt(process.env.OPENAI_TIMEOUT || '30000'),
+        baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+        organization: process.env.OPENAI_ORGANIZATION || '',
+        hasApiKey: !!(process.env.OPENAI_API_KEY)
+      },
+      
+      zhipu: {
+        apiKey: process.env.ZHIPU_API_KEY || '',
+        model: process.env.ZHIPU_MODEL || 'glm-4',
+        maxTokens: parseInt(process.env.ZHIPU_MAX_TOKENS || '2000'),
+        temperature: parseFloat(process.env.ZHIPU_TEMPERATURE || '0.7'),
+        timeout: parseInt(process.env.ZHIPU_TIMEOUT || '30000'),
+        baseURL: process.env.ZHIPU_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4',
+        hasApiKey: !!(process.env.ZHIPU_API_KEY)
+      },
+      
+      qwen: {
+        apiKey: process.env.QWEN_API_KEY || '',
+        model: process.env.QWEN_MODEL || 'qwen-turbo',
+        maxTokens: parseInt(process.env.QWEN_MAX_TOKENS || '2000'),
+        temperature: parseFloat(process.env.QWEN_TEMPERATURE || '0.7'),
+        timeout: parseInt(process.env.QWEN_TIMEOUT || '30000'),
+        baseURL: process.env.QWEN_BASE_URL || 'https://dashscope.aliyuncs.com/api/v1',
+        hasApiKey: !!(process.env.QWEN_API_KEY)
+      },
+      
+      kimi: {
+        apiKey: process.env.KIMI_API_KEY || '',
+        model: process.env.KIMI_MODEL || 'moonshot-v1-8k',
+        maxTokens: parseInt(process.env.KIMI_MAX_TOKENS || '2000'),
+        temperature: parseFloat(process.env.KIMI_TEMPERATURE || '0.7'),
+        timeout: parseInt(process.env.KIMI_TIMEOUT || '30000'),
+        baseURL: process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1',
+        hasApiKey: !!(process.env.KIMI_API_KEY)
+      },
+      
+      deepseek: {
+        apiKey: process.env.DEEPSEEK_API_KEY || '',
+        model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+        maxTokens: parseInt(process.env.DEEPSEEK_MAX_TOKENS || '2000'),
+        temperature: parseFloat(process.env.DEEPSEEK_TEMPERATURE || '0.7'),
+        timeout: parseInt(process.env.DEEPSEEK_TIMEOUT || '30000'),
+        baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1',
+        hasApiKey: !!(process.env.DEEPSEEK_API_KEY)
+      }
     },
     
     redis: {
@@ -93,23 +183,54 @@ export function getAIConfig(): AIConfig {
 }
 
 /**
+ * 获取AI提供商的显示名称
+ */
+export function getProviderDisplayName(provider: AIProvider): string {
+  const names = {
+    openai: 'OpenAI',
+    zhipu: '智谱AI',
+    qwen: '通义千问',
+    kimi: 'Kimi',
+    deepseek: 'DeepSeek'
+  };
+  return names[provider] || provider;
+}
+
+/**
+ * 获取AI提供商支持的模型列表
+ */
+export function getProviderModels(provider: AIProvider): string[] {
+  const models = {
+    openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
+    zhipu: ['glm-4', 'glm-4v', 'glm-3-turbo'],
+    qwen: ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-max-longcontext'],
+    kimi: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
+    deepseek: ['deepseek-chat', 'deepseek-coder']
+  };
+  return models[provider] || [];
+}
+
+/**
  * 验证AI配置（仅验证AI功能相关配置）
  */
 export function validateAIConfig(config: AIConfig): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // 只有在启用AI功能时才验证OpenAI配置
+  // 只有在启用AI功能时才验证当前提供商配置
   if (config.features.chatEnabled || config.features.queryGenerationEnabled || config.features.dataAnalysisEnabled) {
-    if (!config.openai.apiKey) {
-      errors.push('OpenAI API密钥未配置');
+    const currentProviderConfig = config.providers[config.currentProvider];
+    const providerName = getProviderDisplayName(config.currentProvider);
+    
+    if (!currentProviderConfig.apiKey) {
+      errors.push(`${providerName} API密钥未配置`);
     }
     
-    if (config.openai.maxTokens <= 0) {
-      errors.push('OpenAI最大令牌数必须大于0');
+    if (currentProviderConfig.maxTokens <= 0) {
+      errors.push(`${providerName}最大令牌数必须大于0`);
     }
     
-    if (config.openai.temperature < 0 || config.openai.temperature > 2) {
-      errors.push('OpenAI温度参数必须在0-2之间');
+    if (currentProviderConfig.temperature < 0 || currentProviderConfig.temperature > 2) {
+      errors.push(`${providerName}温度参数必须在0-2之间`);
     }
   }
   
@@ -239,6 +360,11 @@ export function mergeConfigs(baseConfig: AIConfig, envConfig: Partial<AIConfig>)
 export function validateBasicConfig(config: AIConfig): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
+  // 验证当前提供商是否存在
+  if (!config.currentProvider || !config.providers[config.currentProvider]) {
+    errors.push('当前AI提供商配置无效');
+  }
+  
   // 验证安全配置
   if (config.security.maxQueryComplexity <= 0) {
     errors.push('最大查询复杂度必须大于0');
@@ -294,24 +420,22 @@ export function isAIFunctionalityAvailable(config: AIConfig): { available: boole
  */
 export function getFinalAIConfig(): AIConfig {
   const baseConfig = getAIConfig();
-  const envConfig = getEnvironmentConfig();
-  const finalConfig = mergeConfigs(baseConfig, envConfig);
   
   // 验证基本配置（必须通过）
-  const basicValidation = validateBasicConfig(finalConfig);
+  const basicValidation = validateBasicConfig(baseConfig);
   if (!basicValidation.isValid) {
     console.error('基本配置验证失败:', basicValidation.errors);
     throw new Error(`基本配置无效: ${basicValidation.errors.join(', ')}`);
   }
   
   // 检查AI功能可用性（不阻止启动）
-  const aiAvailability = isAIFunctionalityAvailable(finalConfig);
-  if (!aiAvailability.available) {
-    console.warn('AI功能不可用，缺少配置:', aiAvailability.missingFeatures);
+  const currentProviderConfig = baseConfig.providers[baseConfig.currentProvider];
+  if (!currentProviderConfig?.apiKey) {
+    console.warn('AI功能不可用，缺少配置:', ['AI聊天功能', '智能查询生成', '数据分析建议']);
     console.warn('基本功能（数据库连接、查询、可视化）仍然可用');
   }
   
-  return finalConfig;
+  return baseConfig;
 }
 
 // 导出默认配置实例

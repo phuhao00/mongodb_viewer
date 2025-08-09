@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import Redis from 'ioredis';
 import { MongoClient } from 'mongodb';
-import { aiConfig } from '../config/aiConfig';
+import { aiConfig, AIProvider, getProviderDisplayName } from '../config/aiConfig';
 import { cacheManager } from './cacheManager';
 
 export interface ConversationContext {
@@ -42,13 +42,21 @@ export interface AnalysisResult {
 }
 
 export class AIService {
-  private openai: OpenAI;
+  private client: OpenAI;
   private redis: Redis;
+  private currentProvider: AIProvider;
   
-  constructor(apiKey?: string, redisUrl?: string) {
-    this.openai = new OpenAI({
-      apiKey: apiKey || aiConfig.openai.apiKey,
-      timeout: aiConfig.openai.timeout
+  constructor(provider?: AIProvider, apiKey?: string, redisUrl?: string) {
+    this.currentProvider = provider || aiConfig.currentProvider;
+    const providerConfig = aiConfig.providers[this.currentProvider];
+    
+    this.client = new OpenAI({
+      apiKey: apiKey || providerConfig.apiKey,
+      baseURL: providerConfig.baseURL,
+      timeout: providerConfig.timeout,
+      ...(this.currentProvider === 'openai' && providerConfig.organization && {
+        organization: providerConfig.organization
+      })
     });
     
     if (redisUrl || aiConfig.redis.url) {
@@ -58,14 +66,15 @@ export class AIService {
   
   async processMessage(message: string, context: ConversationContext): Promise<AIResponse> {
     try {
+      const providerConfig = aiConfig.providers[this.currentProvider];
       const systemPrompt = this.buildSystemPrompt(context.databaseSchema);
       const messages = this.buildMessageHistory(context.history || [], message);
       
-      const response = await this.openai.chat.completions.create({
-        model: aiConfig.openai.model,
+      const response = await this.client.chat.completions.create({
+        model: providerConfig.model,
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
-        temperature: aiConfig.openai.temperature,
-        max_tokens: aiConfig.openai.maxTokens
+        temperature: providerConfig.temperature,
+        max_tokens: providerConfig.maxTokens
       });
       
       const aiResponse = this.parseAIResponse(response.choices[0].message.content || '');
@@ -78,19 +87,20 @@ export class AIService {
       };
     } catch (error) {
       console.error('AI处理错误:', error);
-      throw new Error('AI服务暂时不可用，请稍后重试');
+      throw new Error(`${getProviderDisplayName(this.currentProvider)}服务暂时不可用，请稍后重试`);
     }
   }
   
   async generateQuery(description: string, collection: string, schema?: any): Promise<QueryResult> {
     try {
+      const providerConfig = aiConfig.providers[this.currentProvider];
       const prompt = this.buildQueryPrompt(description, collection, schema);
       
-      const response = await this.openai.chat.completions.create({
-        model: aiConfig.openai.model,
+      const response = await this.client.chat.completions.create({
+        model: providerConfig.model,
         messages: [{ role: 'user', content: prompt }],
-        temperature: Math.min(aiConfig.openai.temperature, 0.1),
-        max_tokens: Math.min(aiConfig.openai.maxTokens, 1000)
+        temperature: Math.min(providerConfig.temperature, 0.1),
+        max_tokens: Math.min(providerConfig.maxTokens, 1000)
       });
       
       const result = this.parseQueryResponse(response.choices[0].message.content || '');
@@ -103,14 +113,15 @@ export class AIService {
   
   async analyzeData(data: any[], analysisType: string = 'auto'): Promise<AnalysisResult> {
     try {
+      const providerConfig = aiConfig.providers[this.currentProvider];
       const dataProfile = this.profileData(data);
       const prompt = this.buildAnalysisPrompt(dataProfile, analysisType);
       
-      const response = await this.openai.chat.completions.create({
-        model: aiConfig.openai.model,
+      const response = await this.client.chat.completions.create({
+        model: providerConfig.model,
         messages: [{ role: 'user', content: prompt }],
-        temperature: Math.min(aiConfig.openai.temperature, 0.2),
-        max_tokens: Math.min(aiConfig.openai.maxTokens, 1500)
+        temperature: Math.min(providerConfig.temperature, 0.2),
+        max_tokens: Math.min(providerConfig.maxTokens, 1500)
       });
       
       const analysis = this.parseAnalysisResponse(response.choices[0].message.content || '');
@@ -118,6 +129,47 @@ export class AIService {
     } catch (error) {
       console.error('数据分析错误:', error);
       throw new Error('数据分析失败，请检查数据格式');
+    }
+  }
+
+  /**
+   * 测试AI API连接
+   */
+  async testConnection(): Promise<void> {
+    try {
+      const providerConfig = aiConfig.providers[this.currentProvider];
+      const providerName = getProviderDisplayName(this.currentProvider);
+      
+      const response = await this.client.chat.completions.create({
+        model: providerConfig.model,
+        messages: [{ role: 'user', content: 'Hello, this is a connection test.' }],
+        max_tokens: 10,
+        temperature: 0
+      });
+
+      if (!response.choices || response.choices.length === 0) {
+        throw new Error('API响应格式无效');
+      }
+
+      // 测试成功
+      console.log(`${providerName} API连接测试成功`);
+    } catch (error) {
+      const providerName = getProviderDisplayName(this.currentProvider);
+      console.error(`${providerName} API连接测试失败:`, error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          throw new Error('API密钥无效或已过期');
+        } else if (error.message.includes('429')) {
+          throw new Error('API请求频率超限，请稍后重试');
+        } else if (error.message.includes('timeout')) {
+          throw new Error('API请求超时，请检查网络连接');
+        } else {
+          throw new Error(`${providerName} API连接失败: ${error.message}`);
+        }
+      } else {
+        throw new Error(`未知的${providerName} API连接错误`);
+      }
     }
   }
   

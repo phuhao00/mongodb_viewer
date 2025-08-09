@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Database, Trash2, TestTube, Loader2 } from 'lucide-react';
+import { Plus, Database, Trash2, TestTube, Loader2, Edit } from 'lucide-react';
 import { useConnections, useUI } from '../store/useStore';
 import { api } from '../services/api';
 import { Button } from '../components/ui/Button';
@@ -29,6 +29,8 @@ const Connections: React.FC = () => {
   const { connections, setConnections, addConnection, removeConnection, setCurrentConnection } = useConnections();
   const { loading, setLoading } = useUI();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingConnectionId, setEditingConnectionId] = useState<string | null>(null);
   const [testingConnection, setTestingConnection] = useState<string | null>(null);
 
   // 构建MongoDB URI
@@ -55,6 +57,35 @@ const Connections: React.FC = () => {
     }
     
     return uri;
+  };
+
+  // 解析MongoDB URI
+  const parseMongoURI = (uri: string): Partial<ConnectionFormData> => {
+    try {
+      const url = new URL(uri);
+      const host = url.hostname || 'localhost';
+      const port = parseInt(url.port) || 27017;
+      const database = url.pathname.slice(1) || '';
+      const username = url.username || '';
+      const password = url.password || '';
+      const useAuth = !!(username && password);
+      
+      const searchParams = new URLSearchParams(url.search);
+      const authDatabase = searchParams.get('authSource') || 'admin';
+      
+      return {
+        host,
+        port,
+        database,
+        username,
+        password,
+        authDatabase,
+        useAuth
+      };
+    } catch (error) {
+      console.error('解析URI失败:', error);
+      return {};
+    }
   };
 
   // 重置表单数据
@@ -148,23 +179,112 @@ const Connections: React.FC = () => {
     }
   };
 
+  // 编辑连接
+  const handleEditConnection = async (connectionId: string) => {
+    try {
+      setLoading('connections', true);
+      const response = await api.connections.getById(connectionId);
+      
+      if (response.success) {
+        const connection = response.data;
+        const parsedData = parseMongoURI(connection.uri);
+        
+        setFormData({
+          name: connection.name,
+          host: parsedData.host || 'localhost',
+          port: parsedData.port || 27017,
+          database: parsedData.database || '',
+          username: parsedData.username || '',
+          password: parsedData.password || '',
+          authDatabase: parsedData.authDatabase || 'admin',
+          useAuth: parsedData.useAuth || false,
+          uri: connection.uri,
+          options: connection.options || {
+            maxPoolSize: 10,
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 10000
+          }
+        });
+        
+        setEditingConnectionId(connectionId);
+        setShowEditDialog(true);
+      }
+    } catch (error: any) {
+      console.error('获取连接详情失败:', error);
+      toast.error(error.message || '获取连接详情失败');
+    } finally {
+      setLoading('connections', false);
+    }
+  };
+
+  // 更新连接
+  const handleUpdateConnection = async () => {
+    if (!formData.name.trim() || !formData.host.trim()) {
+      toast.error('请填写连接名称和主机地址');
+      return;
+    }
+
+    if (formData.useAuth && (!formData.username || !formData.password)) {
+      toast.error('启用认证时，用户名和密码不能为空');
+      return;
+    }
+
+    if (!editingConnectionId) {
+      toast.error('编辑连接ID不存在');
+      return;
+    }
+
+    try {
+      setLoading('connections', true);
+      const uri = buildMongoURI(formData);
+      const response = await api.connections.update(editingConnectionId, {
+        name: formData.name,
+        uri: uri,
+        options: formData.options
+      });
+
+      if (response.success) {
+        toast.success('连接更新成功');
+        setShowEditDialog(false);
+        setEditingConnectionId(null);
+        resetFormData();
+        await loadConnections();
+      }
+    } catch (error: any) {
+      console.error('更新连接失败:', error);
+      toast.error(error.message || '更新连接失败');
+    } finally {
+      setLoading('connections', false);
+    }
+  };
+
   // 测试连接
   const handleTestConnection = async (uri: string, options: any) => {
+    console.log('开始测试连接:', { uri, options });
+    
     try {
       setTestingConnection(uri);
-      const response = await api.connections.test({ uri, options });
+      toast.info('正在测试连接...');
       
-      if (response.success && response.connected) {
-        if (response.canListDatabases) {
-          toast.success(response.message || '连接测试成功，可以访问数据库列表');
-        } else {
-          // 检查是否为无密码连接
-          const isPasswordless = !formData.useAuth;
-          if (isPasswordless) {
-             toast.success(response.message || '无密码连接成功！某些功能可能受限，如需完整功能请配置认证信息。');
+      const response = await api.connections.test({ uri, options });
+      console.log('测试连接响应:', response);
+      
+      if (response.success) {
+        if (response.connected) {
+          if (response.canListDatabases) {
+            toast.success(response.message || '连接测试成功，可以访问数据库列表');
           } else {
-            toast.warning(response.message || '连接成功，但认证配置可能有问题');
+            // 检查是否为无密码连接
+            const isPasswordless = !formData.useAuth;
+            if (isPasswordless) {
+               toast.success(response.message || '无密码连接成功！某些功能可能受限，如需完整功能请配置认证信息。');
+            } else {
+              toast.warning(response.message || '连接成功，但认证配置可能有问题');
+            }
           }
+        } else {
+          const errorMessage = response.error || response.message || '连接测试失败';
+          toast.error(errorMessage);
         }
       } else {
         const errorMessage = response.error || response.message || '连接测试失败';
@@ -172,7 +292,7 @@ const Connections: React.FC = () => {
       }
     } catch (error: any) {
       console.error('测试连接失败:', error);
-      toast.error(error.message || '测试连接失败');
+      toast.error(error.message || '网络错误，请检查后端服务是否正常运行');
     } finally {
       setTestingConnection(null);
     }
@@ -256,14 +376,24 @@ const Connections: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteConnection(connection.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditConnection(connection.id)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteConnection(connection.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               
               <div className="flex gap-2">
@@ -521,6 +651,248 @@ const Connections: React.FC = () => {
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : null}
               创建连接
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* 编辑连接对话框 */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open);
+        if (!open) {
+          setEditingConnectionId(null);
+          resetFormData();
+        }
+      }}>
+        <div className="p-6 max-w-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">编辑连接</h2>
+            <div className="text-sm text-gray-500">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                修改连接配置
+              </span>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <div className="w-4 h-4 text-blue-600 mt-0.5">
+                💡
+              </div>
+              <div className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="font-medium mb-1">编辑提示：</p>
+                <ul className="space-y-1 text-xs">
+                  <li>• 修改连接配置会重新建立数据库连接</li>
+                  <li>• 请确保新的连接配置正确无误</li>
+                  <li>• 建议先测试连接再保存更改</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">连接名称</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="输入连接名称"
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-2">主机地址</label>
+                <Input
+                  value={formData.host}
+                  onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                  placeholder="localhost"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">端口</label>
+                <Input
+                  type="number"
+                  value={formData.port}
+                  onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 27017 })}
+                  placeholder="27017"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">数据库名称（可选）</label>
+              <Input
+                value={formData.database}
+                onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+                placeholder="留空连接到默认数据库"
+              />
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="useAuthEdit"
+                    checked={formData.useAuth}
+                    onChange={(e) => setFormData({ ...formData, useAuth: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="useAuthEdit" className="text-sm font-medium">
+                    启用身份认证
+                  </label>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {formData.useAuth ? '🔒 安全连接' : '🔓 无认证连接'}
+                </div>
+              </div>
+              
+              {!formData.useAuth && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                  <div className="flex items-start gap-2">
+                    <div className="w-4 h-4 text-yellow-600 mt-0.5">
+                      ⚠️
+                    </div>
+                    <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <p className="font-medium mb-1">无认证连接</p>
+                      <p className="text-xs">仅适用于开发环境或未启用认证的MongoDB实例。生产环境建议启用认证。</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.useAuth && (
+                 <div className="space-y-4 pl-6 border-l-2 border-blue-100">
+                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 mb-4">
+                     <div className="flex items-start gap-2">
+                       <div className="w-4 h-4 text-green-600 mt-0.5">
+                         🔐
+                       </div>
+                       <div className="text-sm text-green-800 dark:text-green-200">
+                         <p className="font-medium mb-1">认证配置</p>
+                         <p className="text-xs">请输入具有数据库访问权限的用户凭据。认证数据库是存储用户凭据的数据库。</p>
+                       </div>
+                     </div>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="block text-sm font-medium mb-2">
+                         用户名 <span className="text-red-500">*</span>
+                       </label>
+                       <Input
+                         value={formData.username}
+                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                         placeholder="输入用户名"
+                         className={!formData.username && formData.useAuth ? 'border-red-300' : ''}
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium mb-2">
+                         密码 <span className="text-red-500">*</span>
+                       </label>
+                       <Input
+                         type="password"
+                         value={formData.password}
+                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                         placeholder="输入密码"
+                         className={!formData.password && formData.useAuth ? 'border-red-300' : ''}
+                       />
+                     </div>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-2">
+                       认证数据库
+                       <span className="text-xs text-gray-500 ml-2">(默认: admin)</span>
+                     </label>
+                     <Input
+                       value={formData.authDatabase}
+                       onChange={(e) => setFormData({ ...formData, authDatabase: e.target.value })}
+                       placeholder="admin"
+                     />
+                     <p className="text-xs text-gray-500 mt-1">
+                       通常是 'admin'，或者是创建用户时指定的数据库
+                     </p>
+                   </div>
+                 </div>
+               )}
+            </div>
+            
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-medium mb-3">高级选项</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">最大连接池大小</label>
+                  <Input
+                    type="number"
+                    value={formData.options.maxPoolSize}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      options: { ...formData.options, maxPoolSize: parseInt(e.target.value) }
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">连接超时(ms)</label>
+                  <Input
+                    type="number"
+                    value={formData.options.connectTimeoutMS}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      options: { ...formData.options, connectTimeoutMS: parseInt(e.target.value) }
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+              <label className="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-400">生成的连接URI:</label>
+              <code className="text-xs text-gray-800 dark:text-gray-200 break-all">
+                {buildMongoURI(formData)}
+              </code>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditDialog(false);
+                setEditingConnectionId(null);
+                resetFormData();
+              }}
+              className="flex-1"
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                const uri = buildMongoURI(formData);
+                handleTestConnection(uri, formData.options);
+              }}
+              variant="outline"
+              disabled={testingConnection !== null}
+              className="flex items-center gap-2"
+            >
+              {testingConnection !== null ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <TestTube className="w-4 h-4" />
+              )}
+              测试连接
+            </Button>
+            <Button
+              onClick={handleUpdateConnection}
+              disabled={loading.connections}
+              className="flex-1"
+            >
+              {loading.connections ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              更新连接
             </Button>
           </div>
         </div>

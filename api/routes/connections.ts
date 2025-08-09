@@ -106,6 +106,8 @@ router.get('/:connectionId', (req: Request, res: Response) => {
       data: {
         id: connection.id,
         name: connection.name,
+        uri: connection.uri,
+        options: connection.options,
         createdAt: connection.createdAt,
         updatedAt: connection.updatedAt
       }
@@ -156,6 +158,66 @@ router.post('/test', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: '测试连接失败'
+    });
+  }
+});
+
+// 更新连接
+router.put('/:connectionId', async (req: Request, res: Response) => {
+  try {
+    const { connectionId } = req.params;
+    const { name, uri, options = {} } = req.body;
+
+    if (!name || !uri) {
+      return res.status(400).json({
+        success: false,
+        message: '连接名称和URI是必需的'
+      });
+    }
+
+    const connection = connections.get(connectionId);
+    if (!connection) {
+      return res.status(404).json({
+        success: false,
+        message: '连接不存在'
+      });
+    }
+
+    // 测试新的连接配置
+    const isValid = await dbManager.testConnection(uri, options);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: '无法连接到MongoDB服务器'
+      });
+    }
+
+    // 关闭旧连接
+    await dbManager.closeConnection(connectionId);
+
+    // 更新连接配置
+    const updatedConnection = {
+      ...connection,
+      name,
+      uri,
+      options,
+      updatedAt: new Date()
+    };
+
+    connections.set(connectionId, updatedConnection);
+
+    // 创建新连接
+    await dbManager.createConnection(connectionId, uri, options);
+
+    res.json({
+      success: true,
+      message: '连接更新成功'
+    });
+  } catch (error) {
+    console.error('更新连接失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新连接失败'
     });
   }
 });

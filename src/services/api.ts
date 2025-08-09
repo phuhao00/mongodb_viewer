@@ -33,10 +33,21 @@ export const connectionsAPI = {
   // 获取所有连接
   getAll: () => request<{ success: boolean; data: any[] }>('/connections'),
   
+  // 获取单个连接详情
+  getById: (connectionId: string) =>
+    request<{ success: boolean; data: any }>(`/connections/${connectionId}`),
+  
   // 创建新连接
   create: (data: { name: string; uri: string; options?: any }) =>
     request<{ success: boolean; connectionId: string; message: string }>('/connections', {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  // 更新连接
+  update: (connectionId: string, data: { name: string; uri: string; options?: any }) =>
+    request<{ success: boolean; message: string }>(`/connections/${connectionId}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     }),
   
@@ -252,6 +263,155 @@ export const visualizeAPI = {
     }>(`/visualize/${connectionId}/suggestions/${database}/${collection}`),
 };
 
+// AI配置API
+export const aiAPI = {
+  // 获取AI状态
+  getStatus: () =>
+    request<{
+      success: boolean;
+      data: {
+        aiConfigured: boolean;
+        aiAvailable: boolean;
+        currentProvider: string;
+        providerName: string;
+        availableFeatures: string[];
+        missingFeatures: string[];
+        configuration: any;
+        message: string;
+      };
+    }>('/ai/status'),
+
+  // 获取AI配置
+  getConfig: () =>
+    request<{
+      success: boolean;
+      data: {
+        currentProvider: string;
+        providers: {
+          [key: string]: {
+            model: string;
+            maxTokens: number;
+            temperature: number;
+            timeout: number;
+            baseURL: string;
+            hasApiKey: boolean;
+            organization?: string;
+          };
+        };
+        features: any;
+        security: any;
+        performance: any;
+        availableProviders: Array<{
+          id: string;
+          name: string;
+          models: string[];
+        }>;
+      };
+    }>('/ai/config'),
+
+  // 更新AI配置
+  updateConfig: (data: {
+    currentProvider?: string;
+    providers?: {
+      [key: string]: {
+        apiKey?: string;
+        model?: string;
+        maxTokens?: number;
+        temperature?: number;
+        timeout?: number;
+        baseURL?: string;
+        organization?: string;
+      };
+    };
+    features?: any;
+    security?: any;
+    performance?: any;
+  }) =>
+    request<{
+      success: boolean;
+      message: string;
+      data: {
+        aiConfigured: boolean;
+        aiAvailable: boolean;
+        currentProvider: string;
+        providerName: string;
+      };
+    }>('/ai/config', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  // 测试AI连接
+  testConnection: (data: { provider?: string; apiKey: string }) =>
+    request<{
+      success: boolean;
+      message: string;
+      provider: string;
+      providerName: string;
+    }>('/ai/test-connection', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // AI聊天
+  chat: (data: {
+    message: string;
+    conversationId?: string;
+    databaseSchema?: any;
+    context?: any;
+  }) =>
+    request<{
+      success: boolean;
+      data: {
+        response: string;
+        query?: any;
+        conversationId: string;
+        suggestions?: string[];
+      };
+    }>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 生成查询
+  generateQuery: (data: {
+    description: string;
+    collection: string;
+    schema?: any;
+  }) =>
+    request<{
+      success: boolean;
+      data: {
+        query: any;
+        explanation: string;
+        estimatedCount?: number;
+        estimatedPerformance?: string;
+      };
+    }>('/ai/generate-query', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // 分析数据
+  analyzeData: (data: {
+    data: any[];
+    analysisType?: string;
+  }) =>
+    request<{
+      success: boolean;
+      data: {
+        type: string;
+        insights: any[];
+        charts: any[];
+        summary: string;
+        recommendations: string[];
+      };
+    }>('/ai/analyze', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
 // 健康检查API
 export const healthAPI = {
   check: () => request<{ success: boolean; message: string }>('/health'),
@@ -262,6 +422,7 @@ export const api = {
   connections: connectionsAPI,
   query: queryAPI,
   visualize: visualizeAPI,
+  ai: aiAPI,
   health: healthAPI,
 };
 

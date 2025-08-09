@@ -3,7 +3,7 @@ import { AIService, ConversationContext, Message } from '../services/aiService.j
 import { QuerySecurityValidator } from '../services/queryValidator.js';
 import { MongoClient } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-import { aiConfig, validateAIConfig } from '../config/aiConfig';
+import { aiConfig, validateAIConfig, getProviderDisplayName, getProviderModels, AIProvider } from '../config/aiConfig';
 import {
   aiAuthMiddleware,
   checkAIPermission,
@@ -18,7 +18,16 @@ const router = express.Router();
 // 状态端点不需要认证
 router.get('/status', (req: Request, res: Response) => {
   try {
-    const hasApiKey = !!aiConfig.openai.apiKey;
+    const currentProviderConfig = aiConfig.providers[aiConfig.currentProvider];
+    if (!currentProviderConfig) {
+      return res.status(500).json({
+        success: false,
+        error: `不支持的AI提供商: ${aiConfig.currentProvider}`
+      });
+    }
+    const hasApiKey = !!currentProviderConfig.apiKey;
+    const providerName = getProviderDisplayName(aiConfig.currentProvider);
+    
     const aiAvailability = hasApiKey ? 
       { available: true, missingFeatures: [] } : 
       {
@@ -35,6 +44,8 @@ router.get('/status', (req: Request, res: Response) => {
       data: {
         aiConfigured: hasApiKey,
         aiAvailable: aiAvailability.available,
+        currentProvider: aiConfig.currentProvider,
+        providerName: providerName,
         availableFeatures: [
           '数据库连接管理',
           '数据查询和浏览',
@@ -48,15 +59,16 @@ router.get('/status', (req: Request, res: Response) => {
         ],
         missingFeatures: aiAvailability.missingFeatures,
         configuration: {
-          model: aiConfig.openai.model,
-          maxTokens: aiConfig.openai.maxTokens,
-          temperature: aiConfig.openai.temperature,
+          provider: aiConfig.currentProvider,
+          model: currentProviderConfig.model,
+          maxTokens: currentProviderConfig.maxTokens,
+          temperature: currentProviderConfig.temperature,
           cachingEnabled: aiConfig.features.cachingEnabled,
           queryValidationEnabled: aiConfig.security.enableQueryValidation
         },
         message: hasApiKey ? 
-          'AI功能已配置并可用' : 
-          '基本功能可用，配置OPENAI_API_KEY以启用AI功能'
+          `${providerName}功能已配置并可用` : 
+          `基本功能可用，配置${providerName} API密钥以启用AI功能`
       }
     });
     
@@ -65,6 +77,212 @@ router.get('/status', (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: '获取AI状态失败'
+    });
+  }
+});
+
+// 获取AI配置（不包含敏感信息）
+router.get('/config', (req: Request, res: Response) => {
+  try {
+    const config = {
+      currentProvider: aiConfig.currentProvider,
+      providers: Object.fromEntries(
+        Object.entries(aiConfig.providers).map(([key, provider]) => [
+          key,
+          {
+            model: provider.model,
+            maxTokens: provider.maxTokens,
+            temperature: provider.temperature,
+            timeout: provider.timeout,
+            baseURL: provider.baseURL,
+            hasApiKey: !!provider.apiKey,
+            ...(key === 'openai' && provider.organization && {
+              organization: provider.organization
+            })
+          }
+        ])
+      ),
+      features: aiConfig.features,
+      security: {
+        maxQueryComplexity: aiConfig.security.maxQueryComplexity,
+        maxResultSize: aiConfig.security.maxResultSize,
+        rateLimitPerHour: aiConfig.security.rateLimitPerHour,
+        enableQueryValidation: aiConfig.security.enableQueryValidation
+      },
+      performance: aiConfig.performance,
+      availableProviders: Object.keys(aiConfig.providers).map(provider => ({
+        id: provider,
+        name: getProviderDisplayName(provider as AIProvider),
+        models: getProviderModels(provider as AIProvider)
+      }))
+    };
+
+    res.json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    console.error('获取AI配置错误:', error);
+    res.status(500).json({
+      success: false,
+      error: '获取AI配置失败'
+    });
+  }
+});
+
+// 更新AI配置
+router.put('/config', async (req: Request, res: Response) => {
+  try {
+    const { currentProvider, providers, features, security, performance } = req.body;
+
+    // 验证输入
+    if (!currentProvider && !providers && !features && !security && !performance) {
+      return res.status(400).json({
+        success: false,
+        error: '至少需要提供一个配置项'
+      });
+    }
+
+    // 更新当前提供商
+    if (currentProvider && Object.keys(aiConfig.providers).includes(currentProvider)) {
+      aiConfig.currentProvider = currentProvider;
+      // 重置AI服务实例以使用新的提供商
+      aiService = null;
+    }
+
+    // 更新提供商配置
+    if (providers) {
+      for (const [providerKey, providerConfig] of Object.entries(providers)) {
+        if (aiConfig.providers[providerKey as AIProvider]) {
+          const currentConfig = aiConfig.providers[providerKey as AIProvider];
+          
+          if (providerConfig.apiKey !== undefined) {
+            currentConfig.apiKey = providerConfig.apiKey;
+            // 如果是当前提供商，重置AI服务实例
+            if (providerKey === aiConfig.currentProvider) {
+              aiService = null;
+            }
+          }
+          if (providerConfig.model) currentConfig.model = providerConfig.model;
+          if (providerConfig.maxTokens) currentConfig.maxTokens = providerConfig.maxTokens;
+          if (providerConfig.temperature !== undefined) currentConfig.temperature = providerConfig.temperature;
+          if (providerConfig.timeout) currentConfig.timeout = providerConfig.timeout;
+          if (providerConfig.baseURL) currentConfig.baseURL = providerConfig.baseURL;
+          if (providerKey === 'openai' && providerConfig.organization !== undefined) {
+            currentConfig.organization = providerConfig.organization;
+          }
+        }
+      }
+    }
+
+    // 更新功能配置
+    if (features) {
+      Object.assign(aiConfig.features, features);
+    }
+
+    // 更新安全配置
+    if (security) {
+      Object.assign(aiConfig.security, security);
+    }
+
+    // 更新性能配置
+    if (performance) {
+      Object.assign(aiConfig.performance, performance);
+    }
+
+    // 验证更新后的配置
+    const validation = validateAIConfig(aiConfig);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: '配置验证失败',
+        details: validation.errors
+      });
+    }
+
+    // 测试API密钥（如果提供了新的密钥）- 仅作为警告，不阻止保存
+    const currentProviderConfig = aiConfig.providers[aiConfig.currentProvider];
+    let apiKeyWarning = null;
+    if (providers?.[aiConfig.currentProvider]?.apiKey) {
+      try {
+        const testService = new AIService(aiConfig.currentProvider);
+        await testService.testConnection();
+      } catch (error) {
+        console.warn('API密钥验证失败，但配置仍将保存:', error);
+        apiKeyWarning = error instanceof Error ? error.message : '未知错误';
+      }
+    }
+
+    res.json({
+      success: true,
+      message: apiKeyWarning ? 'AI配置已保存，但API密钥验证失败' : 'AI配置更新成功',
+      warning: apiKeyWarning,
+      data: {
+        aiConfigured: !!currentProviderConfig.apiKey,
+        aiAvailable: !!currentProviderConfig.apiKey && !apiKeyWarning,
+        currentProvider: aiConfig.currentProvider,
+        providerName: getProviderDisplayName(aiConfig.currentProvider)
+      }
+    });
+
+  } catch (error) {
+    console.error('更新AI配置错误:', error);
+    res.status(500).json({
+      success: false,
+      error: '更新AI配置失败',
+      details: error instanceof Error ? error.message : '未知错误'
+    });
+  }
+});
+
+// 测试AI连接
+router.post('/test-connection', async (req: Request, res: Response) => {
+  try {
+    const { provider, apiKey } = req.body;
+
+    if (!apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'API密钥不能为空'
+      });
+    }
+
+    const testProvider = provider || aiConfig.currentProvider;
+    if (!Object.keys(aiConfig.providers).includes(testProvider)) {
+      return res.status(400).json({
+        success: false,
+        error: '不支持的AI提供商'
+      });
+    }
+
+    // 临时设置API密钥
+    const originalApiKey = aiConfig.providers[testProvider].apiKey;
+    aiConfig.providers[testProvider].apiKey = apiKey;
+    
+    try {
+      // 创建临时AI服务实例进行测试
+      const testService = new AIService(testProvider);
+      await testService.testConnection();
+      
+      const providerName = getProviderDisplayName(testProvider);
+      res.json({
+        success: true,
+        message: `${providerName} API密钥验证成功`,
+        provider: testProvider,
+        providerName: providerName
+      });
+    } finally {
+      // 恢复原始API密钥
+      aiConfig.providers[testProvider].apiKey = originalApiKey;
+    }
+
+  } catch (error) {
+    console.error('测试AI连接错误:', error);
+    const providerName = getProviderDisplayName(req.body.provider || aiConfig.currentProvider);
+    res.status(400).json({
+      success: false,
+      error: `${providerName} API密钥验证失败`,
+      details: error instanceof Error ? error.message : '未知错误'
     });
   }
 });
@@ -82,8 +300,11 @@ const queryValidator = new QuerySecurityValidator();
 const getAIService = () => {
   if (!aiService) {
     // 检查AI功能是否可用
-    if (!aiConfig.openai.apiKey) {
-      throw new Error('AI功能未配置：请设置OPENAI_API_KEY环境变量以启用AI聊天、查询生成和数据分析功能');
+    const currentProviderConfig = aiConfig.providers[aiConfig.currentProvider];
+    const providerName = getProviderDisplayName(aiConfig.currentProvider);
+    
+    if (!currentProviderConfig.apiKey) {
+      throw new Error(`AI功能未配置：请设置${providerName} API密钥以启用AI聊天、查询生成和数据分析功能`);
     }
     
     // 验证AI配置
@@ -92,18 +313,23 @@ const getAIService = () => {
       throw new Error(`AI配置无效: ${configValidation.errors.join(', ')}`);
     }
     
-    aiService = new AIService();
+    aiService = new AIService(aiConfig.currentProvider);
   }
   return aiService;
 };
 
 // 检查AI功能是否可用的中间件
 const checkAIAvailability = (req: any, res: Response, next: any) => {
-  if (!aiConfig.openai.apiKey) {
+  const currentProviderConfig = aiConfig.providers[aiConfig.currentProvider];
+  const providerName = getProviderDisplayName(aiConfig.currentProvider);
+  
+  if (!currentProviderConfig.apiKey) {
     return res.status(503).json({
       success: false,
       error: 'AI功能未配置',
-      message: '请配置OPENAI_API_KEY环境变量以启用AI功能',
+      message: `请配置${providerName} API密钥以启用AI功能`,
+      currentProvider: aiConfig.currentProvider,
+      providerName: providerName,
       availableFeatures: [
         '数据库连接管理',
         '数据查询和浏览',
