@@ -15,7 +15,7 @@
 </div>
 
 ## Use Case
-![usecase](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/usecase.gif)
+![usecase](https://github.com/phuhao00/mongodb_viewer/blob/main/src/assets/usecase.gif)
 
 ## 🌟 项目概述
 
