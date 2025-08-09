@@ -14,6 +14,9 @@
 
 </div>
 
+## Use Case
+![usecase](https://raw.githubusercontent.com/phuhao00/mongodb_viewer/main/docs/images/usecase.gif)
+
 ## 🌟 项目概述
 
 提供直观的界面来浏览、查询和管理 MongoDB 数据库，支持实时数据可视化、AI智能查询、代码生成和多连接管理。
